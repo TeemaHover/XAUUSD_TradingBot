@@ -1,0 +1,5 @@
+git clone your-repo-url
+cd TradingBot
+pip install -r requirements.txt
+Copy-Item .env.example .env
+python main.py

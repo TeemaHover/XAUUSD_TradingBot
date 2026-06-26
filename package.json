@@ -1,0 +1,19 @@
+{
+  "name": "xauusd-typescript-trading-bot",
+  "version": "1.0.0",
+  "description": "Modular TypeScript trading bot for XAUUSD with mock broker and backtesting.",
+  "main": "dist/src/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/src/main.js",
+    "dev": "ts-node src/main.ts",
+    "backtest": "node dist/src/backtest/runBacktest.js",
+    "test": "node dist/tests/runTests.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

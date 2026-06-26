@@ -1,0 +1,161 @@
+{
+  "symbol": "GOLD",
+  "bot": {
+    "loopEnabled": true,
+    "intervalSeconds": 5
+  },
+  "broker": {
+    "mode": "mt5"
+  },
+  "timeframes": {
+    "entry": "5m",
+    "trend": "1h",
+    "higherTrend": "4h"
+  },
+  "risk": {
+    "riskPerTrade": 0.005,
+    "maxDailyLoss": 0.03,
+    "maxConsecutiveLosses": 3,
+    "minStopDistance": 0.5,
+    "stopBufferAtr": 0.1,
+    "contractSize": 100,
+    "tickSize": 0.01,
+    "tickValue": 1,
+    "volumeStep": 0.01,
+    "minVolume": 0.01,
+    "maxVolume": 50
+  },
+  "strategy": {
+    "emaLength": 200,
+    "atrLength": 14,
+    "minScore": 75,
+    "watchlistScore": 60,
+    "swingLookback": 5,
+    "equalHighLowToleranceAtr": 0.1,
+    "volumeSpikeMultiplier": 1.5,
+    "minAtr": 0.5,
+    "maxSpread": 1,
+    "allowCounterTrendTrades": false,
+    "counterTrendMinScore": 85
+  },
+  "regime": {
+    "adxLength": 14,
+    "trendAdxThreshold": 22,
+    "rangeAdxThreshold": 16,
+    "highVolatilityAtrMultiplier": 1.4,
+    "lowVolatilityAtrMultiplier": 0.7,
+    "lookback": 80
+  },
+  "adaptiveScoring": {
+    "enabled": true,
+    "regimeScoreMultipliers": {
+      "trending": {
+        "trendAlignment": 1.2,
+        "marketStructure": 1.15,
+        "liquiditySweep": 1,
+        "orderBlock": 1,
+        "fairValueGap": 1,
+        "volumeConfirmation": 1,
+        "sessionAllowed": 1,
+        "volatilityValid": 1
+      },
+      "ranging": {
+        "trendAlignment": 0.75,
+        "marketStructure": 0.85,
+        "liquiditySweep": 1.2,
+        "orderBlock": 1.05,
+        "fairValueGap": 1,
+        "volumeConfirmation": 1,
+        "sessionAllowed": 1,
+        "volatilityValid": 1
+      },
+      "highVolatility": {
+        "trendAlignment": 1,
+        "marketStructure": 1,
+        "liquiditySweep": 0.9,
+        "orderBlock": 1,
+        "fairValueGap": 0.9,
+        "volumeConfirmation": 1.15,
+        "sessionAllowed": 1,
+        "volatilityValid": 0.8
+      },
+      "lowVolatility": {
+        "trendAlignment": 0.8,
+        "marketStructure": 0.8,
+        "liquiditySweep": 0.9,
+        "orderBlock": 0.9,
+        "fairValueGap": 0.9,
+        "volumeConfirmation": 0.8,
+        "sessionAllowed": 1,
+        "volatilityValid": 0.7
+      }
+    }
+  },
+  "news": {
+    "enabled": true,
+    "blackoutMinutesBefore": 30,
+    "blackoutMinutesAfter": 30,
+    "events": []
+  },
+  "tradeGuards": {
+    "cooldownAfterLossMinutes": 60,
+    "maxTradesPerSession": 2
+  },
+  "alerts": {
+    "telegram": {
+      "enabled": false,
+      "botToken": "",
+      "chatId": ""
+    }
+  },
+  "dashboard": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 8787
+  },
+  "walkForward": {
+    "enabled": true,
+    "trainWindow": 500,
+    "testWindow": 120,
+    "stepSize": 120,
+    "outputPath": "walk-forward-results.json"
+  },
+  "scoring": {
+    "trendAlignment": 30,
+    "liquiditySweep": 20,
+    "marketStructure": 20,
+    "orderBlock": 15,
+    "fairValueGap": 10,
+    "volumeConfirmation": 15,
+    "sessionAllowed": 10,
+    "volatilityValid": 10
+  },
+  "sessions": {
+    "enabled": true,
+    "allowed": ["London", "NewYork"],
+    "utcOffsetMinutes": 0
+  },
+  "tradeManagement": {
+    "tpRMultiples": [1, 2, 3],
+    "moveToBreakEvenAfterTp1": true,
+    "trailingStop": false
+  },
+  "mockBroker": {
+    "balance": 10000,
+    "spread": 0.25,
+    "slippage": 0.05,
+    "commissionPerLot": 7
+  },
+  "mt5": {
+    "pythonPath": "python",
+    "bridgePath": "scripts/mt5_bridge.py",
+    "dryRun": false,
+    "deviation": 30,
+    "magic": 26062026,
+    "bars": {
+      "entry": 500,
+      "trend": 500,
+      "higherTrend": 500
+    }
+  }
+}
