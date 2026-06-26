@@ -218,6 +218,10 @@ Important values:
     "host": "127.0.0.1",
     "port": 8787
   },
+  "journal": {
+    "enabled": true,
+    "path": "data/trading-journal.sqlite"
+  },
   "sessions": {
     "allowed": ["London", "NewYork"]
   }
@@ -290,6 +294,25 @@ The bot sends Telegram messages when:
 It does not send an open-position alert for rejected signals or watchlist signals.
 
 Adaptive scoring is configured under `adaptiveScoring.regimeScoreMultipliers`. Regime detection uses ADX plus ATR relative to recent ATR.
+
+## SQLite Journal
+
+SQLite journaling is enabled by default:
+
+```json
+"journal": {
+  "enabled": true,
+  "path": "data/trading-journal.sqlite"
+}
+```
+
+The bot records:
+
+- `bot_events`: started, stopped, and loop errors
+- `signals`: every signal calculation, including rejected/watchlist/trade decisions
+- `trades`: every opened position with entry, SL, TP, volume, score, and full JSON context
+
+The `data/` folder is ignored by Git so your local trading history is not uploaded.
 
 ## Backtest Assumptions
 

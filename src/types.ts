@@ -186,6 +186,10 @@ export interface AppConfig {
     host: string;
     port: number;
   };
+  journal: {
+    enabled: boolean;
+    path: string;
+  };
   walkForward: {
     enabled: boolean;
     trainWindow: number;

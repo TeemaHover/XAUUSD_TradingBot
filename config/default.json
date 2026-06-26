@@ -113,6 +113,10 @@
     "host": "127.0.0.1",
     "port": 8787
   },
+  "journal": {
+    "enabled": true,
+    "path": "data/trading-journal.sqlite"
+  },
   "walkForward": {
     "enabled": true,
     "trainWindow": 500,

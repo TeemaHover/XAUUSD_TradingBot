@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { atr } from "../src/indicators/atr";
@@ -18,6 +19,7 @@ import { TradeGuard } from "../src/execution/tradeGuards";
 import { Candle, LiquidityResult, MarketStructureResult, TradeSignal, TrendResult } from "../src/types";
 import { formatOpenPositionAlert } from "../src/execution/executionEngine";
 import { formatBotStartedAlert, formatBotStoppedAlert } from "../src/main";
+import { SqliteJournal } from "../src/journal/sqliteJournal";
 
 function testEma(): void {
   const values = ema([1, 2, 3, 4], 3);
@@ -118,6 +120,36 @@ function testOpenPositionAlertMessage(): void {
   assert.match(message, /Direction: LONG/);
   assert.match(message, /Volume: 0.1/);
   assert.match(message, /Score: 88/);
+}
+
+function testSqliteJournalWrites(): void {
+  const config = loadConfig();
+  const dbPath = path.join(os.tmpdir(), `trading-journal-${Date.now()}.sqlite`);
+  config.journal.enabled = true;
+  config.journal.path = dbPath;
+
+  const journal = new SqliteJournal(config);
+  journal.init();
+  journal.recordBotEvent("started", { test: true });
+  journal.recordSignal(calculateSignal(sampleCandles(320), sampleCandles(320), sampleCandles(320), config.mockBroker.spread, config));
+  journal.close();
+
+  assert.equal(fs.existsSync(dbPath), true);
+
+  const { DatabaseSync } = require("node:sqlite") as {
+    DatabaseSync: new (filename: string) => {
+      prepare(sql: string): { get(): { count: number } };
+      close(): void;
+    };
+  };
+  const db = new DatabaseSync(dbPath);
+  try {
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM bot_events").get().count, 1);
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM signals").get().count, 1);
+  } finally {
+    db.close();
+    fs.unlinkSync(dbPath);
+  }
 }
 
 function testBotLifecycleAlertMessages(): void {
@@ -499,6 +531,7 @@ testRiskSizing();
 testBotLoopEnvOverrides();
 testTelegramEnvOverrides();
 testOpenPositionAlertMessage();
+testSqliteJournalWrites();
 testBotLifecycleAlertMessages();
 testRiskGuard();
 testRiskGuardHydratesFromHistory();

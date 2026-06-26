@@ -59,6 +59,8 @@ function validateConfig(config: AppConfig): void {
   if (!config.symbol) throw new Error("Invalid config: symbol is required");
   if (!config.bot) throw new Error("Invalid config: bot is required");
   assertPositive(config.bot.intervalSeconds, "bot.intervalSeconds");
+  if (!config.journal) throw new Error("Invalid config: journal is required");
+  if (!config.journal.path) throw new Error("Invalid config: journal.path is required");
   if (!["mock", "mt5"].includes(config.broker.mode)) {
     throw new Error("Invalid config: broker.mode must be mock or mt5");
   }

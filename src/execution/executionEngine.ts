@@ -6,6 +6,7 @@ import { calculatePositionSize, PositionSizingSpec, RiskGuard } from "../risk/po
 import { AppConfig, Position, TradeSignal } from "../types";
 import { TradeGuard } from "./tradeGuards";
 import { TelegramAlerts } from "../alerts/telegram";
+import { SqliteJournal } from "../journal/sqliteJournal";
 
 export function formatOpenPositionAlert(position: Position, signal: TradeSignal, config: AppConfig): string {
   return [
@@ -29,6 +30,7 @@ export class ExecutionEngine {
     private readonly broker: Broker,
     private readonly config: AppConfig,
     private readonly riskGuard: RiskGuard,
+    private readonly journal?: SqliteJournal,
     private readonly tradeGuard = new TradeGuard(config),
     private readonly alerts = new TelegramAlerts(config)
   ) {}
@@ -122,6 +124,7 @@ export class ExecutionEngine {
 
     logger.info("Executed trade", position);
     this.tradeGuard.recordOpen(signal.timestamp);
+    this.journal?.recordTradeOpened(position, signal, signal.reasons.find((reason) => reason.includes("context")) ?? "unknown");
     await this.alerts.send(formatOpenPositionAlert(position, signal, this.config));
   }
 }

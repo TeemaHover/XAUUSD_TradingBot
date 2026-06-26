@@ -10,6 +10,7 @@ import { RiskGuard } from "./risk/positionSizing";
 import { calculateSignal } from "./strategy/signalEngine";
 import { AppConfig, Candle } from "./types";
 import { TelegramAlerts } from "./alerts/telegram";
+import { SqliteJournal } from "./journal/sqliteJournal";
 
 interface MarketSnapshot {
   entryCandles: Candle[];
@@ -80,13 +81,15 @@ async function scanOnce(
   broker: Broker,
   config: AppConfig,
   execution: ExecutionEngine,
-  dashboardState: DashboardState
+  dashboardState: DashboardState,
+  journal: SqliteJournal
 ): Promise<void> {
   const { entryCandles, trendCandles, higherTrendCandles } = await fetchMarketSnapshot(broker, config);
   const spread = await broker.getSpread(config.symbol);
   const decision = calculateSignal(entryCandles, trendCandles, higherTrendCandles, spread, config);
   const action = signalAction(decision);
   dashboardState.lastDecision = decision;
+  journal.recordSignal(decision);
 
   logger.info("Signal calculation", {
     action,
@@ -107,7 +110,9 @@ async function main(): Promise<void> {
   const broker = await createBroker(config);
   const startingBalance = await broker.getBalance();
   const riskGuard = new RiskGuard(config.risk.maxDailyLoss, config.risk.maxConsecutiveLosses, startingBalance);
-  const execution = new ExecutionEngine(broker, config, riskGuard);
+  const journal = new SqliteJournal(config);
+  journal.init();
+  const execution = new ExecutionEngine(broker, config, riskGuard, journal);
   const dashboardState: DashboardState = { dailyPnl: 0 };
   const dashboard = new DashboardServer(config, broker, dashboardState);
   const alerts = new TelegramAlerts(config);
@@ -116,18 +121,25 @@ async function main(): Promise<void> {
   dashboard.start();
   process.once("SIGINT", () => { stopping = true; });
   process.once("SIGTERM", () => { stopping = true; });
+  journal.recordBotEvent("started", {
+    broker: config.broker.mode,
+    loopEnabled: config.bot.loopEnabled,
+    intervalSeconds: config.bot.intervalSeconds,
+    balance: startingBalance
+  });
   await alerts.send(formatBotStartedAlert(config, startingBalance));
 
   try {
-    await scanOnce(broker, config, execution, dashboardState);
+    await scanOnce(broker, config, execution, dashboardState, journal);
 
     while (config.bot.loopEnabled && !stopping) {
       await sleep(config.bot.intervalSeconds * 1000);
       if (stopping) break;
       try {
-        await scanOnce(broker, config, execution, dashboardState);
+        await scanOnce(broker, config, execution, dashboardState, journal);
       } catch (error) {
         logger.error("Signal loop failed", { message: error instanceof Error ? error.message : String(error) });
+        journal.recordBotEvent("error", { message: error instanceof Error ? error.message : String(error) });
       }
     }
 
@@ -139,7 +151,9 @@ async function main(): Promise<void> {
       });
     }
   } finally {
+    journal.recordBotEvent("stopped");
     await alerts.send(formatBotStoppedAlert(config));
+    journal.close();
     dashboard.stop();
     await broker.disconnect();
   }
