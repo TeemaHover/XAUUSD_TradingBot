@@ -272,6 +272,23 @@ Telegram alerts are disabled by default. To enable:
 }
 ```
 
+Or set them from PowerShell before starting the bot:
+
+```powershell
+$env:TELEGRAM_ENABLED="true"
+$env:TELEGRAM_BOT_TOKEN="YOUR_TOKEN"
+$env:TELEGRAM_CHAT_ID="YOUR_CHAT_ID"
+npm start
+```
+
+The bot sends Telegram messages when:
+
+- the bot starts successfully
+- an order is opened by the broker
+- the bot stops
+
+It does not send an open-position alert for rejected signals or watchlist signals.
+
 Adaptive scoring is configured under `adaptiveScoring.regimeScoreMultipliers`. Regime detection uses ADX plus ATR relative to recent ATR.
 
 ## Backtest Assumptions

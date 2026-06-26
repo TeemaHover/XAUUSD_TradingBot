@@ -44,6 +44,15 @@ function applyEnvOverrides(config: AppConfig): void {
 
   const intervalSeconds = envNumber("BOT_INTERVAL_SECONDS");
   if (intervalSeconds !== undefined) config.bot.intervalSeconds = intervalSeconds;
+
+  const telegramEnabled = envBoolean("TELEGRAM_ENABLED");
+  if (telegramEnabled !== undefined) config.alerts.telegram.enabled = telegramEnabled;
+  if (process.env.TELEGRAM_BOT_TOKEN !== undefined) {
+    config.alerts.telegram.botToken = process.env.TELEGRAM_BOT_TOKEN;
+  }
+  if (process.env.TELEGRAM_CHAT_ID !== undefined) {
+    config.alerts.telegram.chatId = process.env.TELEGRAM_CHAT_ID;
+  }
 }
 
 function validateConfig(config: AppConfig): void {

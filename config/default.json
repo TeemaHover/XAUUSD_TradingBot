@@ -103,9 +103,9 @@
   },
   "alerts": {
     "telegram": {
-      "enabled": false,
-      "botToken": "",
-      "chatId": ""
+      "enabled": true,
+      "botToken": "8578262536:AAFQHHLPMXa9GRPbqRCRRD-RnJhGjHBpswQ",
+      "chatId": "8495635905"
     }
   },
   "dashboard": {

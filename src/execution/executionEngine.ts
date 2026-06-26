@@ -3,9 +3,24 @@ import { newsFilter } from "../filters/newsFilter";
 import { sessionFilter } from "../filters/sessionFilter";
 import { logger } from "../logger/logger";
 import { calculatePositionSize, PositionSizingSpec, RiskGuard } from "../risk/positionSizing";
-import { AppConfig, TradeSignal } from "../types";
+import { AppConfig, Position, TradeSignal } from "../types";
 import { TradeGuard } from "./tradeGuards";
 import { TelegramAlerts } from "../alerts/telegram";
+
+export function formatOpenPositionAlert(position: Position, signal: TradeSignal, config: AppConfig): string {
+  return [
+    "Trade opened",
+    `Symbol: ${position.symbol}`,
+    `Direction: ${position.direction.toUpperCase()}`,
+    `Volume: ${position.volume}`,
+    `Entry: ${position.entry}`,
+    `Stop loss: ${position.stopLoss}`,
+    `Take profits: ${position.takeProfits.join(", ")}`,
+    `Score: ${signal.score}`,
+    `Position ID: ${position.id}`,
+    `Mode: ${config.mt5.dryRun ? "DRY_RUN" : "DEMO/LIVE ORDERING ENABLED"}`
+  ].join("\n");
+}
 
 export class ExecutionEngine {
   private executing = false;
@@ -107,6 +122,6 @@ export class ExecutionEngine {
 
     logger.info("Executed trade", position);
     this.tradeGuard.recordOpen(signal.timestamp);
-    await this.alerts.send(`Trade opened ${signal.symbol} ${signal.direction} score=${signal.score}`);
+    await this.alerts.send(formatOpenPositionAlert(position, signal, this.config));
   }
 }

@@ -16,6 +16,8 @@ import { newsFilter } from "../src/filters/newsFilter";
 import { adaptiveRawScore } from "../src/strategy/adaptiveScoring";
 import { TradeGuard } from "../src/execution/tradeGuards";
 import { Candle, LiquidityResult, MarketStructureResult, TradeSignal, TrendResult } from "../src/types";
+import { formatOpenPositionAlert } from "../src/execution/executionEngine";
+import { formatBotStartedAlert, formatBotStoppedAlert } from "../src/main";
 
 function testEma(): void {
   const values = ema([1, 2, 3, 4], 3);
@@ -58,6 +60,80 @@ function testBotLoopEnvOverrides(): void {
       process.env.BOT_INTERVAL_SECONDS = previousInterval;
     }
   }
+}
+
+function testTelegramEnvOverrides(): void {
+  const previousEnabled = process.env.TELEGRAM_ENABLED;
+  const previousToken = process.env.TELEGRAM_BOT_TOKEN;
+  const previousChat = process.env.TELEGRAM_CHAT_ID;
+  process.env.TELEGRAM_ENABLED = "true";
+  process.env.TELEGRAM_BOT_TOKEN = "test-token";
+  process.env.TELEGRAM_CHAT_ID = "test-chat";
+  try {
+    const config = loadConfig();
+    assert.equal(config.alerts.telegram.enabled, true);
+    assert.equal(config.alerts.telegram.botToken, "test-token");
+    assert.equal(config.alerts.telegram.chatId, "test-chat");
+  } finally {
+    if (previousEnabled === undefined) {
+      delete process.env.TELEGRAM_ENABLED;
+    } else {
+      process.env.TELEGRAM_ENABLED = previousEnabled;
+    }
+    if (previousToken === undefined) {
+      delete process.env.TELEGRAM_BOT_TOKEN;
+    } else {
+      process.env.TELEGRAM_BOT_TOKEN = previousToken;
+    }
+    if (previousChat === undefined) {
+      delete process.env.TELEGRAM_CHAT_ID;
+    } else {
+      process.env.TELEGRAM_CHAT_ID = previousChat;
+    }
+  }
+}
+
+function testOpenPositionAlertMessage(): void {
+  const config = loadConfig();
+  const signal: TradeSignal = {
+    symbol: config.symbol,
+    direction: "long",
+    entry: 2300,
+    stopLoss: 2295,
+    takeProfits: [2305, 2310],
+    score: 88,
+    reasons: [],
+    timestamp: Date.UTC(2026, 0, 1)
+  };
+  const message = formatOpenPositionAlert({
+    ...signal,
+    id: "position-1",
+    volume: 0.1,
+    openedAt: signal.timestamp,
+    remainingVolume: 0.1
+  }, signal, config);
+
+  assert.match(message, /Trade opened/);
+  assert.match(message, /Symbol: GOLD/);
+  assert.match(message, /Direction: LONG/);
+  assert.match(message, /Volume: 0.1/);
+  assert.match(message, /Score: 88/);
+}
+
+function testBotLifecycleAlertMessages(): void {
+  const config = loadConfig();
+  const started = formatBotStartedAlert(config, 10000);
+  assert.match(started, /Bot started/);
+  assert.match(started, /Symbol: GOLD/);
+  assert.match(started, /Broker: MT5/);
+  assert.match(started, /Loop: ON every \d+s/);
+  assert.match(started, /Balance: 10000/);
+
+  const stopped = formatBotStoppedAlert(config);
+  assert.match(stopped, /Bot stopped/);
+  assert.match(stopped, /Symbol: GOLD/);
+  assert.match(stopped, /Broker: MT5/);
+  assert.match(stopped, /Stopped at:/);
 }
 
 function testRiskGuard(): void {
@@ -421,6 +497,9 @@ testEma();
 testAtr();
 testRiskSizing();
 testBotLoopEnvOverrides();
+testTelegramEnvOverrides();
+testOpenPositionAlertMessage();
+testBotLifecycleAlertMessages();
 testRiskGuard();
 testRiskGuardHydratesFromHistory();
 testVolumeNormalization();

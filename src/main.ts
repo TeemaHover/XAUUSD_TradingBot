@@ -9,6 +9,7 @@ import { logger } from "./logger/logger";
 import { RiskGuard } from "./risk/positionSizing";
 import { calculateSignal } from "./strategy/signalEngine";
 import { AppConfig, Candle } from "./types";
+import { TelegramAlerts } from "./alerts/telegram";
 
 interface MarketSnapshot {
   entryCandles: Candle[];
@@ -54,6 +55,27 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
+export function formatBotStartedAlert(config: AppConfig, balance: number): string {
+  return [
+    "Bot started",
+    `Symbol: ${config.symbol}`,
+    `Broker: ${config.broker.mode.toUpperCase()}`,
+    `Loop: ${config.bot.loopEnabled ? `ON every ${config.bot.intervalSeconds}s` : "OFF"}`,
+    `Timeframes: entry=${config.timeframes.entry}, trend=${config.timeframes.trend}, higherTrend=${config.timeframes.higherTrend}`,
+    `Balance: ${balance}`,
+    `Mode: ${config.mt5.dryRun ? "DRY_RUN" : "DEMO/LIVE ORDERING ENABLED"}`
+  ].join("\n");
+}
+
+export function formatBotStoppedAlert(config: AppConfig): string {
+  return [
+    "Bot stopped",
+    `Symbol: ${config.symbol}`,
+    `Broker: ${config.broker.mode.toUpperCase()}`,
+    `Stopped at: ${new Date().toISOString()}`
+  ].join("\n");
+}
+
 async function scanOnce(
   broker: Broker,
   config: AppConfig,
@@ -88,37 +110,44 @@ async function main(): Promise<void> {
   const execution = new ExecutionEngine(broker, config, riskGuard);
   const dashboardState: DashboardState = { dailyPnl: 0 };
   const dashboard = new DashboardServer(config, broker, dashboardState);
+  const alerts = new TelegramAlerts(config);
   let stopping = false;
 
   dashboard.start();
   process.once("SIGINT", () => { stopping = true; });
   process.once("SIGTERM", () => { stopping = true; });
+  await alerts.send(formatBotStartedAlert(config, startingBalance));
 
-  await scanOnce(broker, config, execution, dashboardState);
+  try {
+    await scanOnce(broker, config, execution, dashboardState);
 
-  while (config.bot.loopEnabled && !stopping) {
-    await sleep(config.bot.intervalSeconds * 1000);
-    if (stopping) break;
-    try {
-      await scanOnce(broker, config, execution, dashboardState);
-    } catch (error) {
-      logger.error("Signal loop failed", { message: error instanceof Error ? error.message : String(error) });
+    while (config.bot.loopEnabled && !stopping) {
+      await sleep(config.bot.intervalSeconds * 1000);
+      if (stopping) break;
+      try {
+        await scanOnce(broker, config, execution, dashboardState);
+      } catch (error) {
+        logger.error("Signal loop failed", { message: error instanceof Error ? error.message : String(error) });
+      }
     }
-  }
 
-  if (config.dashboard.enabled && !config.bot.loopEnabled) {
-    logger.info("Dashboard is running. Press Ctrl+C to stop.");
-    await new Promise<void>((resolve) => {
-      process.once("SIGINT", resolve);
-      process.once("SIGTERM", resolve);
-    });
+    if (config.dashboard.enabled && !config.bot.loopEnabled) {
+      logger.info("Dashboard is running. Press Ctrl+C to stop.");
+      await new Promise<void>((resolve) => {
+        process.once("SIGINT", resolve);
+        process.once("SIGTERM", resolve);
+      });
+    }
+  } finally {
+    await alerts.send(formatBotStoppedAlert(config));
+    dashboard.stop();
+    await broker.disconnect();
   }
-
-  dashboard.stop();
-  await broker.disconnect();
 }
 
-main().catch((error) => {
-  logger.error("Bot failed", { message: error instanceof Error ? error.message : String(error) });
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    logger.error("Bot failed", { message: error instanceof Error ? error.message : String(error) });
+    process.exitCode = 1;
+  });
+}
