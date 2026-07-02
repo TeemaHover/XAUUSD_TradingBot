@@ -17,6 +17,12 @@ function assertPositive(value: number, name: string): void {
   }
 }
 
+function assertNonNegative(value: number, name: string): void {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`Invalid config: ${name} must be zero or greater (0 = unlimited)`);
+  }
+}
+
 function envBoolean(name: string): boolean | undefined {
   const value = process.env[name];
   if (value === undefined) return undefined;
@@ -65,8 +71,8 @@ function validateConfig(config: AppConfig): void {
     throw new Error("Invalid config: broker.mode must be mock or mt5");
   }
   assertPositive(config.risk.riskPerTrade, "risk.riskPerTrade");
-  assertPositive(config.risk.maxDailyLoss, "risk.maxDailyLoss");
-  assertPositive(config.risk.maxConsecutiveLosses, "risk.maxConsecutiveLosses");
+  assertNonNegative(config.risk.maxDailyLoss, "risk.maxDailyLoss");
+  assertNonNegative(config.risk.maxConsecutiveLosses, "risk.maxConsecutiveLosses");
   assertPositive(config.risk.minStopDistance, "risk.minStopDistance");
   assertPositive(config.risk.tickSize, "risk.tickSize");
   assertPositive(config.risk.tickValue, "risk.tickValue");
@@ -90,7 +96,7 @@ function validateConfig(config: AppConfig): void {
   assertPositive(config.news.blackoutMinutesBefore, "news.blackoutMinutesBefore");
   assertPositive(config.news.blackoutMinutesAfter, "news.blackoutMinutesAfter");
   assertPositive(config.tradeGuards.cooldownAfterLossMinutes, "tradeGuards.cooldownAfterLossMinutes");
-  assertPositive(config.tradeGuards.maxTradesPerSession, "tradeGuards.maxTradesPerSession");
+  assertNonNegative(config.tradeGuards.maxTradesPerSession, "tradeGuards.maxTradesPerSession");
   if (!Number.isFinite(config.sessions.utcOffsetMinutes)) {
     throw new Error("Invalid config: sessions.utcOffsetMinutes must be finite");
   }

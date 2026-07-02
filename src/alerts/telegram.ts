@@ -27,16 +27,29 @@ export class TelegramAlerts {
 
     await new Promise<void>((resolve) => {
       const req = https.request(options, (res) => {
-        res.resume();
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(chunk));
         res.on("end", () => {
+          const responseBody = Buffer.concat(chunks).toString();
           if ((res.statusCode ?? 500) >= 400) {
-            logger.warn("Telegram alert failed", { statusCode: res.statusCode });
+            logger.warn("Telegram alert failed", { statusCode: res.statusCode, body: responseBody });
+          } else {
+            logger.info("Telegram alert sent", { statusCode: res.statusCode });
           }
+          resolve();
+        });
+        res.on("error", (error) => {
+          logger.warn("Telegram response error", { message: error.message });
           resolve();
         });
       });
       req.on("error", (error) => {
         logger.warn("Telegram alert error", { message: error.message });
+        resolve();
+      });
+      req.on("timeout", () => {
+        logger.warn("Telegram alert timed out");
+        req.destroy();
         resolve();
       });
       req.write(body);

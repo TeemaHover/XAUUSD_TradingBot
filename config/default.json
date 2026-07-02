@@ -14,7 +14,7 @@
   },
   "risk": {
     "riskPerTrade": 0.005,
-    "maxDailyLoss": 0.03,
+    "maxDailyLoss": 0,
     "maxConsecutiveLosses": 3,
     "minStopDistance": 0.5,
     "stopBufferAtr": 0.1,
@@ -36,7 +36,17 @@
     "minAtr": 0.5,
     "maxSpread": 1,
     "allowCounterTrendTrades": false,
-    "counterTrendMinScore": 85
+    "counterTrendMinScore": 85,
+    "srProximityAtr": 0.5,
+    "srZoneToleranceAtr": 0.3,
+    "requireConfirmationCandle": true,
+    "rangeLongThreshold": 15,
+    "rangeShortThreshold": 85,
+    "rangeMinAlternations": 2,
+    "dumbMode": false,
+    "aiMode": false,
+    "aiConfidenceThreshold": 0.55,
+    "aiModelPath": "models/ai_model.npz"
   },
   "regime": {
     "adxLength": 14,
@@ -52,32 +62,41 @@
       "trending": {
         "trendAlignment": 1.2,
         "marketStructure": 1.15,
-        "liquiditySweep": 1,
-        "orderBlock": 1,
-        "fairValueGap": 1,
-        "volumeConfirmation": 1,
-        "sessionAllowed": 1,
-        "volatilityValid": 1
+        "liquiditySweep": 1.0,
+        "orderBlock": 1.0,
+        "fairValueGap": 1.0,
+        "volumeConfirmation": 1.0,
+        "sessionAllowed": 1.0,
+        "volatilityValid": 1.0,
+        "srConfirmation": 1.0,
+        "fibConfirmation": 1.1,
+        "doublePattern": 0.9
       },
       "ranging": {
         "trendAlignment": 0.75,
         "marketStructure": 0.85,
         "liquiditySweep": 1.2,
         "orderBlock": 1.05,
-        "fairValueGap": 1,
-        "volumeConfirmation": 1,
-        "sessionAllowed": 1,
-        "volatilityValid": 1
+        "fairValueGap": 1.0,
+        "volumeConfirmation": 1.0,
+        "sessionAllowed": 1.0,
+        "volatilityValid": 1.0,
+        "srConfirmation": 1.3,
+        "fibConfirmation": 1.2,
+        "doublePattern": 1.3
       },
       "highVolatility": {
-        "trendAlignment": 1,
-        "marketStructure": 1,
+        "trendAlignment": 1.0,
+        "marketStructure": 1.0,
         "liquiditySweep": 0.9,
-        "orderBlock": 1,
+        "orderBlock": 1.0,
         "fairValueGap": 0.9,
         "volumeConfirmation": 1.15,
-        "sessionAllowed": 1,
-        "volatilityValid": 0.8
+        "sessionAllowed": 1.0,
+        "volatilityValid": 0.8,
+        "srConfirmation": 0.8,
+        "fibConfirmation": 0.8,
+        "doublePattern": 0.7
       },
       "lowVolatility": {
         "trendAlignment": 0.8,
@@ -86,8 +105,11 @@
         "orderBlock": 0.9,
         "fairValueGap": 0.9,
         "volumeConfirmation": 0.8,
-        "sessionAllowed": 1,
-        "volatilityValid": 0.7
+        "sessionAllowed": 1.0,
+        "volatilityValid": 0.7,
+        "srConfirmation": 1.1,
+        "fibConfirmation": 1.0,
+        "doublePattern": 1.1
       }
     }
   },
@@ -99,7 +121,7 @@
   },
   "tradeGuards": {
     "cooldownAfterLossMinutes": 60,
-    "maxTradesPerSession": 2
+    "maxTradesPerSession": 0
   },
   "alerts": {
     "telegram": {
@@ -132,15 +154,25 @@
     "fairValueGap": 10,
     "volumeConfirmation": 15,
     "sessionAllowed": 10,
-    "volatilityValid": 10
+    "volatilityValid": 10,
+    "srConfirmation": 15,
+    "fibConfirmation": 12,
+    "doublePattern": 12
   },
   "sessions": {
-    "enabled": true,
-    "allowed": ["London", "NewYork"],
+    "enabled": false,
+    "allowed": [
+      "London",
+      "NewYork"
+    ],
     "utcOffsetMinutes": 0
   },
   "tradeManagement": {
-    "tpRMultiples": [1, 2, 3],
+    "tpRMultiples": [
+      1,
+      2,
+      3
+    ],
     "moveToBreakEvenAfterTp1": true,
     "trailingStop": false
   },

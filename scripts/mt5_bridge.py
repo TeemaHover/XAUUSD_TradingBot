@@ -161,11 +161,27 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         ensure_symbol(symbol)
         timeframe = payload.get("timeframe")
         limit = int(payload.get("limit", 500))
+        from_ts = payload.get("fromTimestamp")   # Unix ms; if set, use date-range fetch
         mt5_timeframe = TIMEFRAMES.get(timeframe)
         if mt5_timeframe is None:
             fail(f"Unsupported timeframe: {timeframe}")
-        rates = mt5.copy_rates_from_pos(symbol, mt5_timeframe, 0, limit)
-        if rates is None:
+
+        rates = None
+        if from_ts is not None:
+            # Try date-range first
+            from_dt = datetime.utcfromtimestamp(int(from_ts) / 1000)
+            to_dt   = datetime.utcnow()
+            rates   = mt5.copy_rates_range(symbol, mt5_timeframe, from_dt, to_dt)
+
+        if rates is None or len(rates) == 0:
+            # Fall back: try progressively smaller bar counts until one succeeds
+            # (MT5 terminal "Max bars in chart" setting varies; default often 50000)
+            for try_limit in [99000, 50000, 30000, 10000, limit]:
+                rates = mt5.copy_rates_from_pos(symbol, mt5_timeframe, 0, try_limit)
+                if rates is not None and len(rates) > 0:
+                    break
+
+        if rates is None or len(rates) == 0:
             fail(f"No candles returned for {symbol}: {mt5.last_error()}")
         return {"candles": [candle_from_rate(rate) for rate in rates]}
 
@@ -217,10 +233,21 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             "comment": payload.get("comment", "typescript-mt5-bot"),
             "type_time": mt5.ORDER_TIME_GTC,
         }
+        # symbol_info.filling_mode is a bitmask:
+        #   bit 0 (value 1) = FOK supported  -> ORDER_FILLING_FOK = 0
+        #   bit 1 (value 2) = IOC supported  -> ORDER_FILLING_IOC = 1
+        #   bit 2 (value 4) = RETURN supported -> ORDER_FILLING_RETURN = 2
+        filling_mask = int(symbol_info.filling_mode)
         filling_modes = []
-        for mode in (int(symbol_info.filling_mode), mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_RETURN):
-            if mode not in filling_modes:
-                filling_modes.append(mode)
+        if filling_mask & 1:
+            filling_modes.append(mt5.ORDER_FILLING_FOK)
+        if filling_mask & 2:
+            filling_modes.append(mt5.ORDER_FILLING_IOC)
+        if filling_mask & 4:
+            filling_modes.append(mt5.ORDER_FILLING_RETURN)
+        # Fallback: try all three if mask gave nothing useful
+        if not filling_modes:
+            filling_modes = [mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_RETURN]
 
         errors = []
         for filling_mode in filling_modes:
@@ -243,6 +270,78 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             errors.append(f"send filling={filling_mode} retcode={result.retcode} comment={result.comment}")
 
         fail("Order failed with all filling modes: " + " | ".join(errors))
+
+
+    if command == "ai_predict":
+        import os as _os
+        import sys as _sys
+        import numpy as _np
+        _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+        try:
+            from ai_features import extract_sequence, extract_multi_tf_sequence, SEQ_LEN
+            from ai_model    import load_model, MTF_TFS
+        except ImportError as e:
+            fail(f"AI modules not found: {e}")
+
+        model_path = payload.get("modelPath", "models/ai_model.npz")
+        symbol     = payload.get("symbol", "GOLD")
+
+        if not _os.path.exists(model_path):
+            return {"direction": "hold", "confidence": 0.0,
+                    "reason": f"model not found at {model_path} -- run ai_train.py first"}
+
+        # Detect model type from the .npz
+        _meta = _np.load(model_path, allow_pickle=True)
+        _mtype = str(_meta.get("model_type", _np.array("single_tf")))
+
+        model = load_model(model_path)
+        needed = SEQ_LEN + 1
+
+        if _mtype == "multi_tf":
+            # ── Multi-TF: fetch 5m, 1h, 4h candles from MT5 directly ──
+            tf_map = {"5m": mt5.TIMEFRAME_M5,
+                      "1h": mt5.TIMEFRAME_H1,
+                      "4h": mt5.TIMEFRAME_H4}
+            candles_dict = {}
+            for tf_name, mt5_tf in tf_map.items():
+                rates = mt5.copy_rates_from_pos(symbol, mt5_tf, 0, needed)
+                if rates is None or len(rates) == 0:
+                    return {"direction": "hold", "confidence": 0.0,
+                            "reason": f"no {tf_name} candles from MT5 for {symbol}"}
+                candles_dict[tf_name] = [
+                    {"time":   int(r["time"]) * 1000,
+                     "open":   float(r["open"]),
+                     "high":   float(r["high"]),
+                     "low":    float(r["low"]),
+                     "close":  float(r["close"]),
+                     "volume": float(r["tick_volume"])}
+                    for r in rates
+                ]
+            seqs = extract_multi_tf_sequence(candles_dict)
+            direction, confidence = model.predict_one(seqs)
+
+        else:
+            # ── Single-TF: use candles passed in payload (or fetch 5m) ──
+            candles = payload.get("candles", [])
+            if len(candles) < needed:
+                # Fallback: fetch from MT5
+                rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, needed)
+                if rates is None or len(rates) == 0:
+                    return {"direction": "hold", "confidence": 0.0,
+                            "reason": f"no candles from MT5 for {symbol}"}
+                candles = [
+                    {"time":   int(r["time"]) * 1000,
+                     "open":   float(r["open"]),
+                     "high":   float(r["high"]),
+                     "low":    float(r["low"]),
+                     "close":  float(r["close"]),
+                     "volume": float(r["tick_volume"])}
+                    for r in rates
+                ]
+            seq = extract_sequence(candles)
+            direction, confidence = model.predict_one(seq)
+
+        return {"direction": direction, "confidence": confidence}
 
     fail(f"Unsupported command: {command}")
 

@@ -3,6 +3,7 @@ export type Bias = "bullish" | "bearish" | "sideways";
 export type Timeframe = "5m" | "15m" | "1h" | "4h" | "1d";
 export type SessionName = "Asian" | "London" | "NewYork" | "OffSession";
 export type MarketRegime = "trending" | "ranging" | "highVolatility" | "lowVolatility";
+export type TradingMode = "beginner" | "advanced" | "expert" | "dumb" | "ai";
 export type ScoreComponent =
   | "trendAlignment"
   | "liquiditySweep"
@@ -11,7 +12,10 @@ export type ScoreComponent =
   | "fairValueGap"
   | "volumeConfirmation"
   | "sessionAllowed"
-  | "volatilityValid";
+  | "volatilityValid"
+  | "srConfirmation"
+  | "fibConfirmation"
+  | "doublePattern";
 
 export interface Candle {
   time: number;
@@ -98,6 +102,14 @@ export interface VolumeResult extends DetectorResult {
   spike: boolean;
 }
 
+export interface SRResult extends DetectorResult {
+  supportZones: Zone[];
+  resistanceZones: Zone[];
+  nearSupport: boolean;
+  nearResistance: boolean;
+  nearRoundNumber: boolean;
+}
+
 export interface MarketRegimeResult extends DetectorResult {
   regime: MarketRegime;
   atr: number;
@@ -151,6 +163,24 @@ export interface AppConfig {
     maxSpread: number;
     allowCounterTrendTrades: boolean;
     counterTrendMinScore: number;
+    /** require a confirmation candle before entry */
+    requireConfirmationCandle: boolean;
+    /** range trade: long when price position <= this % */
+    rangeLongThreshold: number;
+    /** range trade: short when price position >= this % */
+    rangeShortThreshold: number;
+    /** minimum alternations required to confirm a range */
+    rangeMinAlternations: number;
+    /** dumb mode: only trade S/R + BOS + FVG — ignores all other filters */
+    dumbMode: boolean;
+    /** ai mode: use neural network model for trading decisions */
+    aiMode: boolean;
+    /** minimum model confidence to enter a trade (0-1, default 0.55) */
+    aiConfidenceThreshold: number;
+    /** path to trained model weights (default models/ai_model.npz) */
+    aiModelPath: string;
+    srProximityAtr: number;
+    srZoneToleranceAtr: number;
   };
   regime: {
     adxLength: number;
@@ -206,6 +236,9 @@ export interface AppConfig {
     volumeConfirmation: number;
     sessionAllowed: number;
     volatilityValid: number;
+    srConfirmation: number;
+    fibConfirmation: number;
+    doublePattern: number;
   };
   sessions: {
     enabled: boolean;

@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { logger } from "../logger/logger";
-import { AppConfig, Position, TradeSignal } from "../types";
+import { AppConfig, Position, TradingMode, TradeSignal } from "../types";
 import { SignalDecision } from "../strategy/signalEngine";
 
 type DatabaseSyncConstructor = new (filename: string) => {
   exec(sql: string): void;
-  prepare(sql: string): { run(...params: unknown[]): unknown };
+  prepare(sql: string): { run(...params: unknown[]): unknown; get(...params: unknown[]): unknown };
   close(): void;
 };
 
@@ -68,9 +68,44 @@ export class SqliteJournal {
         signal_json TEXT NOT NULL,
         position_json TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
     `);
     logger.info("SQLite journal started", { path: resolved });
   }
+
+  // ── Mode persistence ────────────────────────────────────────────────────────
+
+  saveMode(mode: TradingMode): void {
+    this.safeRun(() => {
+      this.db?.prepare(`
+        INSERT INTO settings (key, value, updated_at)
+        VALUES ('trading_mode', ?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+      `).run(mode, Date.now());
+      logger.info("Trading mode saved", { mode });
+    });
+  }
+
+  loadMode(): TradingMode | undefined {
+    if (!this.config.journal.enabled || !this.db) return undefined;
+    try {
+      const row = this.db.prepare(
+        `SELECT value FROM settings WHERE key = 'trading_mode'`
+      ).get() as { value: string } | undefined;
+      if (!row) return undefined;
+      const valid: TradingMode[] = ["beginner", "advanced", "expert"];
+      return valid.includes(row.value as TradingMode) ? (row.value as TradingMode) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  // ── Event / signal / trade recording ────────────────────────────────────────
 
   recordBotEvent(eventType: "started" | "stopped" | "error", details: Record<string, unknown> = {}): void {
     this.safeRun(() => {

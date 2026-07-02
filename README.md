@@ -228,24 +228,139 @@ Important values:
 }
 ```
 
+## Trading Modes
+
+The bot supports four trading modes that control how strict or loose the entry rules are. The active mode is saved in SQLite and remembered across restarts.
+
+### Switching Modes
+
+Pass `--mode` on startup. The choice is saved automatically:
+
+```powershell
+npx ts-node src/main.ts --mode beginner
+npx ts-node src/main.ts --mode advanced
+npx ts-node src/main.ts --mode expert
+npx ts-node src/main.ts --mode dumb
+```
+
+If no `--mode` arg is given, the bot loads the last saved mode. If no mode has ever been set, it defaults to `expert`.
+
+---
+
+### Mode 1 — Beginner
+
+**Purpose:** Learning. Looser rules mean more signals so you can observe how the bot behaves in different market conditions.
+
+| Setting | Value |
+|---|---|
+| Min score to trade | 45 |
+| Watchlist score | 30 |
+| Counter-trend trades | Allowed |
+| Confirmation candle | Not required |
+| Range long threshold | Bottom 25% of range |
+| Range short threshold | Top 75% of range |
+| Range alternations required | 1 |
+
+All standard modules run (trend, FVG, order block, S/R, Fibonacci, double patterns). More setups pass because the score bar is lower and counter-trend trades are allowed.
+
+---
+
+### Mode 2 — Advanced
+
+**Purpose:** Balanced. Good for live demo trading while still being disciplined enough to filter noise.
+
+| Setting | Value |
+|---|---|
+| Min score to trade | 60 |
+| Watchlist score | 45 |
+| Counter-trend trades | Not allowed |
+| Confirmation candle | Required |
+| Range long threshold | Bottom 20% of range |
+| Range short threshold | Top 80% of range |
+| Range alternations required | 2 |
+
+---
+
+### Mode 3 — Expert
+
+**Purpose:** Strict. The current default. Requires strong confluence across multiple modules before signaling a trade.
+
+| Setting | Value |
+|---|---|
+| Min score to trade | 75 |
+| Watchlist score | 60 |
+| Counter-trend trades | Not allowed |
+| Confirmation candle | Required |
+| Range long threshold | Bottom 15% of range |
+| Range short threshold | Top 85% of range |
+| Range alternations required | 2 |
+
+Expects BOS/MSS/sweep for directional context. Double patterns must be confirmed (neckline broken). Range trades only trigger right at the boundary.
+
+---
+
+### Mode 4 — Dumb
+
+**Purpose:** Pure price action. Only three conditions must align — no scoring, no trend filter, no session filter, no news filter.
+
+**Entry rules:**
+
+| Condition | Long | Short |
+|---|---|---|
+| Price location | Near support zone | Near resistance zone |
+| Structure | Bullish BOS formed | Bearish BOS formed |
+| Gap | Bullish FVG present | Bearish FVG present |
+
+All three must be true at the same time. If any one is missing, the bot logs exactly what it is waiting for:
+
+```
+Waiting: near support but no bullish BOS yet
+Waiting: not near any S/R level
+Near resistance + bearish BOS but no bearish FVG — waiting for FVG
+```
+
+**Stop loss:** placed just outside the S/R zone boundary (not at a swing low/high).
+
+**Take profits:** standard 1R / 2R / 3R multiples from config.
+
+This mode is useful for verifying that the S/R detection, BOS detection, and FVG detection are working correctly before adding more filters.
+
+---
+
+### Mode Comparison
+
+| Mode | Min Score | Counter-Trend | Confirmation Candle | Range Threshold | Logic |
+|---|---|---|---|---|---|
+| Beginner | 45 | Yes | No | 25% / 75% | Full scoring, loose |
+| Advanced | 60 | No | Yes | 20% / 80% | Full scoring, balanced |
+| Expert | 75 | No | Yes | 15% / 85% | Full scoring, strict |
+| Dumb | — | No | No | — | S/R + BOS + FVG only |
+
+
 ## Scoring
 
-Each module contributes points:
+Each module contributes points (Expert mode thresholds):
 
 - Trend alignment: 30
 - Liquidity sweep: 20
-- MSS/CHOCH: 20
+- MSS/BOS: 20
 - Order block: 15
 - FVG: 10
 - Volume confirmation: 15
 - Session allowed: 10
 - Volatility valid: 10
+- S/R confirmation: 15
+- Fibonacci level: 12
+- Double top/bottom pattern: 12
 
-The final score is normalized to `0-100`.
+The final score is normalized to `0-100`. Adaptive scoring adjusts weights by market regime (trending, ranging, high volatility, low volatility).
 
+Expert mode thresholds:
 - `>= 75`: valid trade
 - `60-74`: watchlist only
 - `< 60`: rejected
+
+Thresholds differ per mode — see the Trading Modes section above.
 
 The engine logs rejection reasons such as missing directional context, missing confirmation candle, low score, invalid stop distance, session rejection, or volatility rejection.
 

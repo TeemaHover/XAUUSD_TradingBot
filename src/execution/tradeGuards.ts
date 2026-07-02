@@ -15,7 +15,8 @@ export class TradeGuard {
 
     const key = this.sessionKey(timestamp);
     const count = this.sessionCounts.get(key) ?? 0;
-    if (count >= this.config.tradeGuards.maxTradesPerSession) {
+    const maxTrades = this.config.tradeGuards.maxTradesPerSession;
+    if (maxTrades > 0 && count >= maxTrades) {
       reasons.push(`Max trades reached for session ${key}`);
     }
 

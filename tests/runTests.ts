@@ -154,7 +154,7 @@ function testSqliteJournalWrites(): void {
 
 function testBotLifecycleAlertMessages(): void {
   const config = loadConfig();
-  const started = formatBotStartedAlert(config, 10000);
+  const started = formatBotStartedAlert(config, 10000, "expert");
   assert.match(started, /Bot started/);
   assert.match(started, /Symbol: GOLD/);
   assert.match(started, /Broker: MT5/);
@@ -404,7 +404,10 @@ function testAdaptiveScoring(): void {
     fairValueGap: { score: 10, reasons: [] },
     volumeConfirmation: { score: 10, reasons: [] },
     sessionAllowed: { score: 10, reasons: [] },
-    volatilityValid: { score: 10, reasons: [] }
+    volatilityValid: { score: 10, reasons: [] },
+    srConfirmation: { score: 10, reasons: [] },
+    fibConfirmation: { score: 10, reasons: [] },
+    doublePattern: { score: 10, reasons: [] }
   }, "trending", config);
   assert.ok(result.rawScore > 0);
   assert.ok(result.maxScore > 0);

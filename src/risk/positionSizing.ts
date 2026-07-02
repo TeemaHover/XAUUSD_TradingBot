@@ -48,8 +48,9 @@ export class RiskGuard {
   ) {}
 
   canTrade(): boolean {
-    return this.dailyLoss < this.startingBalance * this.maxDailyLoss
-      && this.consecutiveLosses < this.maxConsecutiveLosses;
+    const dailyLossOk = this.maxDailyLoss === 0 || this.dailyLoss < this.startingBalance * this.maxDailyLoss;
+    const consecutiveOk = this.maxConsecutiveLosses === 0 || this.consecutiveLosses < this.maxConsecutiveLosses;
+    return dailyLossOk && consecutiveOk;
   }
 
   status(): { canTrade: boolean; dailyLoss: number; consecutiveLosses: number; maxDailyLossAmount: number } {
