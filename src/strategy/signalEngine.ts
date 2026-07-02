@@ -206,6 +206,132 @@ function takeProfits(entry: number, stopLoss: number, direction: Direction, conf
   ));
 }
 
+interface ZoneEntryPlan {
+  entry: number;
+  stopLoss: number;
+  entryType: "market" | "limit";
+  reasons: string[];
+}
+
+/**
+ * Sniper/zone entry: instead of entering at market after a confirmation candle,
+ * place the entry at the proximal edge of the nearest unmitigated order block or
+ * unfilled FVG in the trade direction, with the stop behind the distal edge.
+ * Entry closer to invalidation -> smaller stop -> more R for the same targets.
+ * Returns undefined when no usable zone exists (zone mode takes no trade then).
+ */
+export function zoneEntryPlan(
+  direction: Direction,
+  latest: Candle,
+  orderBlock: ReturnType<typeof detectOrderBlock>,
+  fvg: ReturnType<typeof detectFvg>,
+  atrValue: number,
+  spread: number,
+  config: AppConfig
+): ZoneEntryPlan | undefined {
+  const candidates: { low: number; high: number; label: string }[] = [];
+  if (direction === "long") {
+    if (orderBlock.bullish && !orderBlock.bullish.mitigated) {
+      candidates.push({ low: orderBlock.bullish.low, high: orderBlock.bullish.high, label: "bullish OB" });
+    }
+    if (fvg.bullish && fvg.bullish.filledPercent < 50) {
+      candidates.push({ low: fvg.bullish.low, high: fvg.bullish.high, label: "bullish FVG" });
+    }
+  } else {
+    if (orderBlock.bearish && !orderBlock.bearish.mitigated) {
+      candidates.push({ low: orderBlock.bearish.low, high: orderBlock.bearish.high, label: "bearish OB" });
+    }
+    if (fvg.bearish && fvg.bearish.filledPercent < 50) {
+      candidates.push({ low: fvg.bearish.low, high: fvg.bearish.high, label: "bearish FVG" });
+    }
+  }
+
+  // Zone must sit on the retracement side of price (below price for longs, above for shorts)
+  const slack = atrValue * 0.1;
+  const usable = candidates.filter((zone) => (
+    direction === "long" ? zone.high <= latest.close + slack : zone.low >= latest.close - slack
+  ));
+  if (usable.length === 0) return undefined;
+
+  // Prefer the zone whose proximal edge is closest to price (least retracement needed)
+  const best = usable.sort((a, b) => (
+    direction === "long" ? b.high - a.high : a.low - b.low
+  ))[0];
+
+  const proximal = direction === "long" ? best.high : best.low;
+  const distal = direction === "long" ? best.low : best.high;
+  const buffer = Math.max(atrValue * config.risk.stopBufferAtr, config.risk.minStopDistance * 0.5);
+
+  const tolerance = (config.strategy.zoneTouchToleranceAtr ?? 0.15) * atrValue;
+  const distance = direction === "long" ? latest.close - proximal : proximal - latest.close;
+  const entryType: "market" | "limit" = distance > tolerance ? "limit" : "market";
+
+  // If price is already at/inside the zone, enter at market price, not a worse level
+  const rawEntry = entryType === "market"
+    ? (direction === "long" ? Math.min(proximal, latest.close) : Math.max(proximal, latest.close))
+    : proximal;
+  const entry = direction === "long" ? rawEntry + spread / 2 : rawEntry - spread / 2;
+
+  let stopLoss = direction === "long" ? distal - buffer : distal + buffer;
+  if (direction === "long" && entry - stopLoss < config.risk.minStopDistance) {
+    stopLoss = entry - config.risk.minStopDistance;
+  }
+  if (direction === "short" && stopLoss - entry < config.risk.minStopDistance) {
+    stopLoss = entry + config.risk.minStopDistance;
+  }
+
+  return {
+    entry,
+    stopLoss,
+    entryType,
+    reasons: [
+      `Zone entry (${best.label} ${best.low.toFixed(2)}-${best.high.toFixed(2)}): ${entryType} @ ${entry.toFixed(2)}, stop behind zone @ ${stopLoss.toFixed(2)}`
+    ]
+  };
+}
+
+/**
+ * Structure-based final target: replace the last R-multiple TP with the nearest
+ * opposing swing (front-run by 10% of risk) when that swing offers >= 1.5R.
+ * Winners aim at real liquidity instead of an arbitrary 3R line.
+ */
+export function structureTakeProfits(
+  entry: number,
+  stopLoss: number,
+  direction: Direction,
+  swings: { price: number; type: "high" | "low" }[],
+  config: AppConfig
+): { tps: number[]; tpMode: "r" | "price"; reason?: string } {
+  const base = takeProfits(entry, stopLoss, direction, config);
+  if (!config.tradeManagement.structureTargets) return { tps: base, tpMode: "r" };
+
+  const risk = Math.abs(entry - stopLoss);
+  if (risk <= 0) return { tps: base, tpMode: "r" };
+
+  const opposing = swings.filter((swing) => (
+    direction === "long" ? swing.type === "high" && swing.price > entry : swing.type === "low" && swing.price < entry
+  ));
+  if (opposing.length === 0) return { tps: base, tpMode: "r" };
+
+  const swingTarget = direction === "long"
+    ? Math.min(...opposing.map((swing) => swing.price))
+    : Math.max(...opposing.map((swing) => swing.price));
+  // Front-run the liquidity slightly so the order fills before the crowd's
+  const target = direction === "long" ? swingTarget - risk * 0.1 : swingTarget + risk * 0.1;
+  const targetR = Math.abs(target - entry) / risk;
+  if (targetR < 1.5) return { tps: base, tpMode: "r" };
+
+  const tps = [...base];
+  tps[tps.length - 1] = target;
+  // Keep TP ordering monotonic if the structure target is closer than TP2
+  const sorted = direction === "long" ? [...tps].sort((a, b) => a - b) : [...tps].sort((a, b) => b - a);
+  return {
+    tps: sorted,
+    tpMode: "price",
+    reason: `Structure TP: final target ${target.toFixed(2)} (${targetR.toFixed(1)}R) at opposing swing`
+  };
+}
+
 /**
  * For range trades, TP targets are the range mid (TP1) and opposite boundary (TP2).
  * This replaces R-multiple TPs so the bot takes profit at the range ceiling/floor.
@@ -472,7 +598,10 @@ export function calculateSignal(
     };
   }
 
-  if (config.strategy.requireConfirmationCandle && !hasConfirmationCandle(entryCandles, direction)) {
+  const zoneMode = config.strategy.entryMode === "zone" && !isRangeTrade;
+
+  // Zone mode: the limit price at the zone edge IS the trigger — no confirmation candle needed
+  if (!zoneMode && config.strategy.requireConfirmationCandle && !hasConfirmationCandle(entryCandles, direction)) {
     return {
       status: "rejected",
       score,
@@ -536,8 +665,39 @@ export function calculateSignal(
     };
   }
 
-  const entry = direction === "long" ? latest.close + spread / 2 : latest.close - spread / 2;
-  const stopLoss = stopLossForDirection(entryCandles, direction, entry, config);
+  let entry: number;
+  let stopLoss: number;
+  let entryType: "market" | "limit" = "market";
+
+  if (zoneMode) {
+    const atrValue = atr(entryCandles, config.strategy.atrLength).at(-1) ?? 1;
+    const plan = zoneEntryPlan(direction, latest, orderBlock, fvg, atrValue, spread, config);
+    if (!plan) {
+      return {
+        status: "rejected",
+        score,
+        reasons: [...reasons, "Rejected: zone mode — no unmitigated OB / unfilled FVG to anchor a limit entry"],
+        finalDecision: buildFinalDecision({
+          direction,
+          currentTrend,
+          higherTrend,
+          counterTrend: directionalContext.counterTrend,
+          isRangeTrade,
+          score,
+          config,
+          action: "reject"
+        })
+      };
+    }
+    entry = plan.entry;
+    stopLoss = plan.stopLoss;
+    entryType = plan.entryType;
+    reasons.push(...plan.reasons);
+  } else {
+    entry = direction === "long" ? latest.close + spread / 2 : latest.close - spread / 2;
+    stopLoss = stopLossForDirection(entryCandles, direction, entry, config);
+  }
+
   const risk = Math.abs(entry - stopLoss);
   if (risk < config.risk.minStopDistance) {
     return {
@@ -558,10 +718,19 @@ export function calculateSignal(
     };
   }
 
-  // Range trades target the opposite side of the range; trend trades use R-multiples
-  const tps = isRangeTrade && range.detected
-    ? rangeTakeProfits(direction, range)
-    : takeProfits(entry, stopLoss, direction, config);
+  // Range trades target the opposite side of the range; trend trades use
+  // R-multiples, optionally upgrading the final TP to a structure target.
+  let tps: number[];
+  let tpMode: "r" | "price" = "r";
+  if (isRangeTrade && range.detected) {
+    tps = rangeTakeProfits(direction, range);
+    tpMode = "price";
+  } else {
+    const structured = structureTakeProfits(entry, stopLoss, direction, liquidity.swings, config);
+    tps = structured.tps;
+    tpMode = structured.tpMode;
+    if (structured.reason) reasons.push(structured.reason);
+  }
 
   return {
     status: "trade",
@@ -586,7 +755,9 @@ export function calculateSignal(
       score,
       reasons,
       timestamp: latest.time,
-      regime: regime.regime
+      regime: regime.regime,
+      entryType,
+      tpMode
     }
   };
 }

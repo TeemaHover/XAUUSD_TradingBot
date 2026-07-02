@@ -19,6 +19,7 @@ export interface BacktestResult {
     grossLossR: number;
     rejectedByRisk: number;
     rejectedByTradeGuard: number;
+    canceledLimitOrders: number;
   };
   trades: BacktestTrade[];
 }
@@ -101,7 +102,9 @@ export function resolveTrade(
       }
       for (const { index: targetIndex } of touchedTargets) {
         hitTargets.add(targetIndex);
-        realizedR += tpFractions[targetIndex] * (targetIndex + 1);
+        realizedR += tpFractions[targetIndex] * (initialRisk > 0
+          ? Math.abs(signal.takeProfits[targetIndex] - signal.entry) / initialRisk
+          : 0);
         if (targetIndex === 0 && config.tradeManagement.moveToBreakEvenAfterTp1) {
           stopLoss = signal.entry;
         }
@@ -137,7 +140,9 @@ export function resolveTrade(
       }
       for (const { index: targetIndex } of touchedTargets) {
         hitTargets.add(targetIndex);
-        realizedR += tpFractions[targetIndex] * (targetIndex + 1);
+        realizedR += tpFractions[targetIndex] * (initialRisk > 0
+          ? Math.abs(signal.takeProfits[targetIndex] - signal.entry) / initialRisk
+          : 0);
         if (targetIndex === 0 && config.tradeManagement.moveToBreakEvenAfterTp1) {
           stopLoss = signal.entry;
         }
@@ -182,14 +187,43 @@ export function applyNextOpenFill(signal: TradeSignal, nextCandle: Candle, confi
   const risk = Math.abs(entry - signal.stopLoss);
   if (risk < config.risk.minStopDistance) return undefined;
 
+  // Price-level TPs (range boundaries, structure targets) stay put when the
+  // fill price shifts; R-multiple TPs are recomputed from the actual fill.
+  const takeProfits = signal.tpMode === "price"
+    ? signal.takeProfits
+    : config.tradeManagement.tpRMultiples.map((multiple) => (
+      signal.direction === "long" ? entry + risk * multiple : entry - risk * multiple
+    ));
+
   return {
     ...signal,
     entry,
     timestamp: nextCandle.time,
-    takeProfits: config.tradeManagement.tpRMultiples.map((multiple) => (
-      signal.direction === "long" ? entry + risk * multiple : entry - risk * multiple
-    ))
+    takeProfits
   };
+}
+
+/**
+ * Simulate a pending limit order: returns the index of the bar that fills it
+ * (bid/ask touches the limit price) or -1 if it expires untouched.
+ */
+export function findLimitFillIndex(
+  signal: TradeSignal,
+  candles: Candle[],
+  fromIndex: number,
+  expiryBars: number,
+  endIndex: number,
+  halfSpread: number
+): number {
+  const limitEnd = Math.min(fromIndex + expiryBars, endIndex);
+  for (let j = fromIndex; j < limitEnd; j += 1) {
+    const candle = candles[j];
+    const touched = signal.direction === "long"
+      ? candle.low <= signal.entry - halfSpread
+      : candle.high >= signal.entry + halfSpread;
+    if (touched) return j;
+  }
+  return -1;
 }
 
 export function runBacktest(
@@ -206,6 +240,7 @@ export function runBacktest(
   const tradeGuard = new TradeGuard(config);
   let rejectedByRisk = 0;
   let rejectedByTradeGuard = 0;
+  let canceledLimitOrders = 0;
 
   const startIndex = Math.max(warmup, options.startIndex ?? warmup);
   const maxHoldBars = options.maxHoldBars ?? 96;
@@ -238,7 +273,33 @@ export function runBacktest(
       continue;
     }
 
-    const filledSignal = applyNextOpenFill(decision.signal, candles[i + 1], config);
+    let filledSignal: TradeSignal | undefined;
+    let resolutionStart = i + 1;
+
+    if (decision.signal.entryType === "limit") {
+      const expiryBars = config.tradeManagement.limitExpiryBars ?? 12;
+      const fillIndex = findLimitFillIndex(
+        decision.signal,
+        candles,
+        i + 1,
+        expiryBars,
+        endIndex,
+        config.mockBroker.spread / 2
+      );
+      if (fillIndex < 0) {
+        canceledLimitOrders += 1;
+        logger.info("Backtest limit order expired untouched", { index: i, entry: decision.signal.entry });
+        i += expiryBars; // one pending order at a time — no new signals while waiting
+        continue;
+      }
+      filledSignal = { ...decision.signal, timestamp: candles[fillIndex].time };
+      // Include the fill bar: it can run through the zone and hit the stop same-bar
+      resolutionStart = fillIndex;
+      i = fillIndex;
+    } else {
+      filledSignal = applyNextOpenFill(decision.signal, candles[i + 1], config);
+    }
+
     if (!filledSignal) {
       logger.warn("Backtest trade rejected: next-open fill invalidated stop distance", {
         index: i,
@@ -254,7 +315,7 @@ export function runBacktest(
       filledSignal.stopLoss,
       config.risk
     );
-    const resolutionCandles = candles.slice(i + 1, endIndex);
+    const resolutionCandles = candles.slice(resolutionStart, endIndex);
     const resolved = resolveTrade(filledSignal, resolutionCandles, config, volume, balance, maxHoldBars);
     const profit = resolved.resultR * balance * config.risk.riskPerTrade;
     balance += profit;
@@ -297,7 +358,8 @@ export function runBacktest(
       grossWinR: grossWin,
       grossLossR: grossLoss,
       rejectedByRisk,
-      rejectedByTradeGuard
+      rejectedByTradeGuard,
+      canceledLimitOrders
     },
     trades
   };

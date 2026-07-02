@@ -20,10 +20,20 @@ from typing import Dict, List, Tuple
 
 LABELS     = {0: "long", 1: "short", 2: "hold"}
 SEQ_LEN    = 30
-N_FEATURES = 7
+N_FEATURES = 12   # must match ai_features.N_FEATURES — models trained on 7 features must be retrained
 N_CLASSES  = 3
 MTF_TFS    = ["5m", "1h", "4h"]   # timeframe order used by MultiTFCNN
 BRANCH_DIM = 64                    # GAP output size per branch
+
+
+def _check_feature_count(npz_data, path: str) -> None:
+    """Refuse to load weights trained on a different feature set."""
+    saved = int(npz_data.get("n_features", np.array(7)))
+    if saved != N_FEATURES:
+        raise ValueError(
+            f"Model at {path} was trained with {saved} features but the code now "
+            f"uses {N_FEATURES}. Retrain it: python scripts/ai_train.py <csv> ..."
+        )
 
 
 # ══════════════════════════════════════════════════════════ activations ══
@@ -215,6 +225,7 @@ class CNN1D(AdamMixin):
         os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
         np.savez(path,
                  model_type=np.array("single_tf"),
+                 n_features=np.array(N_FEATURES),
                  conv1_W=self.conv1.W, conv1_b=self.conv1.b,
                  conv2_W=self.conv2.W, conv2_b=self.conv2.b,
                  fc1_W=self.fc1.W,     fc1_b=self.fc1.b,
@@ -224,6 +235,7 @@ class CNN1D(AdamMixin):
 
     def load(self, path: str):
         d = np.load(path, allow_pickle=True)
+        _check_feature_count(d, path)
         self.conv1.W = d["conv1_W"].astype(np.float32)
         self.conv1.b = d["conv1_b"].astype(np.float32)
         self.conv2.W = d["conv2_W"].astype(np.float32)
@@ -376,7 +388,8 @@ class MultiTFCNN(AdamMixin):
     # -------------------------------------------- save / load
     def save(self, path: str):
         os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
-        arrays = {"model_type": np.array("multi_tf"), "t": np.array(self._t)}
+        arrays = {"model_type": np.array("multi_tf"), "t": np.array(self._t),
+                  "n_features": np.array(N_FEATURES)}
         for tf in self.TIMEFRAMES:
             b = self.branches[tf]
             arrays[f"{tf}_conv1_W"] = b["conv1"].W
@@ -390,6 +403,7 @@ class MultiTFCNN(AdamMixin):
 
     def load(self, path: str):
         d = np.load(path, allow_pickle=True)
+        _check_feature_count(d, path)
         for tf in self.TIMEFRAMES:
             b = self.branches[tf]
             b["conv1"].W = d[f"{tf}_conv1_W"].astype(np.float32)

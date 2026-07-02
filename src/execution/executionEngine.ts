@@ -112,6 +112,10 @@ export class ExecutionEngine {
       return;
     }
 
+    const timeframeSeconds: Record<string, number> = { "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 };
+    const expiryBars = this.config.tradeManagement.limitExpiryBars ?? 12;
+    const barSeconds = timeframeSeconds[this.config.timeframes.entry] ?? 300;
+
     const position = await this.broker.placeOrder({
       symbol: signal.symbol,
       direction: signal.direction,
@@ -119,10 +123,12 @@ export class ExecutionEngine {
       entry: signal.entry,
       stopLoss: signal.stopLoss,
       takeProfits: signal.takeProfits,
-      comment: `score=${signal.score}`
+      comment: `score=${signal.score}`,
+      entryType: signal.entryType ?? "market",
+      expirySeconds: signal.entryType === "limit" ? expiryBars * barSeconds : undefined
     });
 
-    logger.info("Executed trade", position);
+    logger.info(signal.entryType === "limit" ? "Placed pending limit order" : "Executed trade", position);
     this.tradeGuard.recordOpen(signal.timestamp);
     this.journal?.recordTradeOpened(position, signal, signal.reasons.find((reason) => reason.includes("context")) ?? "unknown");
     await this.alerts.send(formatOpenPositionAlert(position, signal, this.config));

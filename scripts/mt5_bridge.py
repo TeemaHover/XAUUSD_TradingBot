@@ -213,26 +213,73 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         tick = mt5.symbol_info_tick(symbol)
         if tick is None:
             fail(f"Could not read tick for {symbol}: {mt5.last_error()}")
-        price = float(tick.ask if direction == "long" else tick.bid)
+        is_limit = payload.get("entryType") == "limit"
+        market_price = float(tick.ask if direction == "long" else tick.bid)
         stop_loss = float(payload["stopLoss"])
         take_profits = payload.get("takeProfits") or []
         take_profit = float(take_profits[0]) if take_profits else 0.0
         dry_run = bool(payload.get("dryRun", True))
+        magic = int(payload.get("magic", 26062026))
+
+        if is_limit:
+            entry_price = float(payload.get("entry") or 0.0)
+            if entry_price <= 0:
+                fail("Limit order requires a positive entry price")
+            # Guard: never stack pending orders — the bot loop re-emits the same
+            # signal every few seconds while price approaches the zone.
+            existing = mt5.orders_get(symbol=symbol) or []
+            for pending in existing:
+                if int(pending.magic) == magic:
+                    return {
+                        "ticket": str(pending.ticket),
+                        "price": float(pending.price_open),
+                        "volume": float(pending.volume_initial),
+                        "pending": True,
+                        "duplicate": True,
+                    }
+            # A buy limit must sit below the current ask, sell limit above the bid;
+            # otherwise fall back to a market order.
+            if (direction == "long" and entry_price >= market_price) or (
+                direction == "short" and entry_price <= market_price
+            ):
+                is_limit = False
+
+        price = entry_price if is_limit else market_price
         validate_stops(direction, price, stop_loss, take_profit, symbol_info)
 
-        base_request = {
-            "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": symbol,
-            "volume": volume,
-            "type": order_type(direction),
-            "price": price,
-            "sl": stop_loss,
-            "tp": take_profit,
-            "deviation": int(payload.get("deviation", 30)),
-            "magic": int(payload.get("magic", 26062026)),
-            "comment": payload.get("comment", "typescript-mt5-bot"),
-            "type_time": mt5.ORDER_TIME_GTC,
-        }
+        if is_limit:
+            pending_type = mt5.ORDER_TYPE_BUY_LIMIT if direction == "long" else mt5.ORDER_TYPE_SELL_LIMIT
+            base_request = {
+                "action": mt5.TRADE_ACTION_PENDING,
+                "symbol": symbol,
+                "volume": volume,
+                "type": pending_type,
+                "price": price,
+                "sl": stop_loss,
+                "tp": take_profit,
+                "magic": magic,
+                "comment": payload.get("comment", "typescript-mt5-bot"),
+                "type_time": mt5.ORDER_TIME_GTC,
+            }
+            expiry_seconds = payload.get("expirySeconds")
+            if expiry_seconds:
+                from datetime import timedelta
+                base_request["type_time"] = mt5.ORDER_TIME_SPECIFIED
+                base_request["expiration"] = datetime.now(timezone.utc) + timedelta(seconds=int(expiry_seconds))
+        else:
+            base_request = {
+                "action": mt5.TRADE_ACTION_DEAL,
+                "symbol": symbol,
+                "volume": volume,
+                "type": order_type(direction),
+                "price": price,
+                "sl": stop_loss,
+                "tp": take_profit,
+                "deviation": int(payload.get("deviation", 30)),
+                "magic": magic,
+                "comment": payload.get("comment", "typescript-mt5-bot"),
+                "type_time": mt5.ORDER_TIME_GTC,
+            }
         # symbol_info.filling_mode is a bitmask:
         #   bit 0 (value 1) = FOK supported  -> ORDER_FILLING_FOK = 0
         #   bit 1 (value 2) = IOC supported  -> ORDER_FILLING_IOC = 1
@@ -265,8 +312,22 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             if result is None:
                 errors.append(f"send filling={filling_mode} returned None error={mt5.last_error()}")
                 continue
+            # Some brokers reject ORDER_TIME_SPECIFIED on pendings — retry as GTC
+            if result.retcode != mt5.TRADE_RETCODE_DONE and "expiration" in request:
+                request = dict(request)
+                request.pop("expiration", None)
+                request["type_time"] = mt5.ORDER_TIME_GTC
+                result = mt5.order_send(request)
+                if result is None:
+                    errors.append(f"send filling={filling_mode} GTC retry returned None error={mt5.last_error()}")
+                    continue
             if result.retcode == mt5.TRADE_RETCODE_DONE:
-                return {"ticket": str(result.order), "price": float(result.price), "volume": float(result.volume)}
+                return {
+                    "ticket": str(result.order),
+                    "price": float(result.price) or price,
+                    "volume": float(result.volume) or volume,
+                    "pending": is_limit,
+                }
             errors.append(f"send filling={filling_mode} retcode={result.retcode} comment={result.comment}")
 
         fail("Order failed with all filling modes: " + " | ".join(errors))

@@ -46,7 +46,9 @@
     "dumbMode": false,
     "aiMode": false,
     "aiConfidenceThreshold": 0.55,
-    "aiModelPath": "models/ai_model.npz"
+    "aiModelPath": "models/ai_model.npz",
+    "entryMode": "market",
+    "zoneTouchToleranceAtr": 0.15
   },
   "regime": {
     "adxLength": 14,
@@ -174,7 +176,9 @@
       3
     ],
     "moveToBreakEvenAfterTp1": true,
-    "trailingStop": false
+    "trailingStop": false,
+    "limitExpiryBars": 12,
+    "structureTargets": true
   },
   "mockBroker": {
     "balance": 10000,

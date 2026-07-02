@@ -13,7 +13,14 @@ Options:
     --lr          Learning rate (default 0.001)
     --forward     Forward bars for label generation (default 5)
     --threshold   ATR multiplier for BUY/SELL threshold (default 1.0)
+    --val-frac    Fraction of data held out for validation (default 0.2)
     --out         Output model path (default models/ai_model.npz)
+
+Validation is CHRONOLOGICAL: the last `val-frac` of the data is held out,
+never shuffled into training, with an embargo gap of `forward` bars so
+train labels cannot peek into the validation window. Early stopping and
+the saved model are based on validation loss, and the reported metrics
+are out-of-sample.
 """
 
 import sys, os, csv, argparse, bisect
@@ -68,12 +75,37 @@ def make_labels(candles, feature_start: int, forward: int,
     return np.array(labels, dtype=np.int32)
 
 
+# ------------------------------------------------- chronological split
+def chrono_split(n: int, val_frac: float, embargo: int):
+    """
+    Time-ordered split. First (1 - val_frac) of samples -> train,
+    last val_frac -> validation. `embargo` samples are dropped between
+    the two so that forward-looking train labels cannot overlap the
+    validation window (label leakage).
+    """
+    n_val   = max(1, int(round(n * val_frac)))
+    v_start = n - n_val
+    t_end   = max(0, v_start - embargo)
+    return np.arange(0, t_end), np.arange(v_start, n)
+
+
 # ---------------------------------------------------------- class weights
 def compute_class_weights(y: np.ndarray, n_classes: int = 3) -> np.ndarray:
     counts  = np.bincount(y, minlength=n_classes).astype(float)
     counts  = np.where(counts == 0, 1., counts)
     weights = y.shape[0] / (n_classes * counts)
     return weights.astype(np.float32)
+
+
+# ------------------------------------------------- weight snapshot/restore
+def snapshot_params(model) -> dict:
+    return {k: getattr(layer, attr).copy()
+            for k, (layer, attr) in model._param_map().items()}
+
+
+def restore_params(model, snap: dict):
+    for k, (layer, attr) in model._param_map().items():
+        setattr(layer, attr, snap[k].copy())
 
 
 # --------------------------------------------------------- confusion matrix
@@ -101,87 +133,68 @@ def print_confusion(y_true, y_pred, labels=("BUY","SELL","HOLD")):
               f"  (actual={cm[i].sum():,}  predicted={cm[:,i].sum():,})")
 
 
-# ================================================ single-TF training loop
-def train_single(X: np.ndarray, y: np.ndarray, epochs: int, lr: float,
-                 class_weights: np.ndarray, batch_size: int = 32) -> CNN1D:
-    model      = CNN1D()
-    n          = X.shape[0]
-    best_loss  = float("inf")
+# =========================================================== training loop
+def train_model(model, get_batch, predict_val, n_train: int, y_val: np.ndarray,
+                epochs: int, lr: float, class_weights: np.ndarray,
+                batch_size: int = 32,
+                lr_patience: int = 15, stop_patience: int = 40):
+    """
+    Generic loop used by both single-TF and multi-TF models.
+
+    get_batch(indices)  -> (Xb, yb) training batch
+    predict_val()       -> probs over the validation set
+
+    Early stopping and LR decay are driven by VALIDATION loss, and the
+    best-validation weights are restored before returning.
+    """
+    best_val   = float("inf")
+    best_snap  = snapshot_params(model)
+    best_epoch = 0
     no_improve = 0
     current_lr = lr
 
     for epoch in range(1, epochs + 1):
-        idx = np.random.permutation(n)
+        idx = np.random.permutation(n_train)
         total_loss, batches = 0., 0
-        for start in range(0, n, batch_size):
-            bi    = idx[start:start+batch_size]
-            Xb, yb = X[bi], y[bi]
-            probs = model.forward(Xb)
-            loss  = model.loss(probs, yb, class_weights)
-            grads = model.backward(Xb, yb, class_weights)
+        for start in range(0, n_train, batch_size):
+            bi     = idx[start:start+batch_size]
+            Xb, yb = get_batch(bi)
+            probs  = model.forward(Xb)
+            loss   = model.loss(probs, yb, class_weights)
+            grads  = model.backward(Xb, yb, class_weights)
             model.adam_step(grads, lr=current_lr)
             total_loss += loss; batches += 1
 
-        epoch_loss = total_loss / batches
-        if epoch_loss < best_loss - 1e-4:
-            best_loss = epoch_loss; no_improve = 0
+        train_loss = total_loss / batches
+        val_probs  = predict_val()
+        val_loss   = cross_entropy(val_probs, y_val)   # unweighted: honest OOS loss
+
+        if val_loss < best_val - 1e-4:
+            best_val   = val_loss
+            best_snap  = snapshot_params(model)
+            best_epoch = epoch
+            no_improve = 0
         else:
             no_improve += 1
-        if no_improve >= 30:
-            current_lr *= 0.5; no_improve = 0
-            print(f"  [LR decay] → {current_lr:.6f}")
+            if no_improve % lr_patience == 0:
+                current_lr *= 0.5
+                print(f"  [LR decay] -> {current_lr:.6f}")
+            if no_improve >= stop_patience:
+                print(f"  [Early stop] epoch {epoch}: no val improvement "
+                      f"for {stop_patience} epochs (best epoch {best_epoch})")
+                break
 
         if epoch % 20 == 0 or epoch == 1:
-            preds  = np.argmax(model.predict(X), axis=1)
-            acc    = float(np.mean(preds == y))
-            counts = np.bincount(preds, minlength=3)
-            print(f"  Epoch {epoch:>4}/{epochs}  loss={epoch_loss:.4f}"
-                  f"  acc={acc:.3f}  BUY={counts[0]:,} SELL={counts[1]:,} HOLD={counts[2]:,}"
+            val_preds = np.argmax(val_probs, axis=1)
+            val_acc   = float(np.mean(val_preds == y_val))
+            counts    = np.bincount(val_preds, minlength=3)
+            print(f"  Epoch {epoch:>4}/{epochs}  train_loss={train_loss:.4f}"
+                  f"  val_loss={val_loss:.4f}  val_acc={val_acc:.3f}"
+                  f"  val BUY={counts[0]:,} SELL={counts[1]:,} HOLD={counts[2]:,}"
                   f"  lr={current_lr:.5f}")
 
-    return model
-
-
-# ============================================= multi-TF training loop
-def train_multi(X_dict: dict, y: np.ndarray, epochs: int, lr: float,
-                class_weights: np.ndarray, batch_size: int = 32) -> MultiTFCNN:
-    model      = MultiTFCNN()
-    n          = y.shape[0]
-    best_loss  = float("inf")
-    no_improve = 0
-    current_lr = lr
-    tfs        = list(X_dict.keys())
-
-    for epoch in range(1, epochs + 1):
-        idx = np.random.permutation(n)
-        total_loss, batches = 0., 0
-        for start in range(0, n, batch_size):
-            bi  = idx[start:start+batch_size]
-            yb  = y[bi]
-            Xb  = {tf: X_dict[tf][bi] for tf in tfs}
-            probs = model.forward(Xb)
-            loss  = model.loss(probs, yb, class_weights)
-            grads = model.backward(Xb, yb, class_weights)
-            model.adam_step(grads, lr=current_lr)
-            total_loss += loss; batches += 1
-
-        epoch_loss = total_loss / batches
-        if epoch_loss < best_loss - 1e-4:
-            best_loss = epoch_loss; no_improve = 0
-        else:
-            no_improve += 1
-        if no_improve >= 30:
-            current_lr *= 0.5; no_improve = 0
-            print(f"  [LR decay] → {current_lr:.6f}")
-
-        if epoch % 20 == 0 or epoch == 1:
-            preds  = np.argmax(model.predict(X_dict), axis=1)
-            acc    = float(np.mean(preds == y))
-            counts = np.bincount(preds, minlength=3)
-            print(f"  Epoch {epoch:>4}/{epochs}  loss={epoch_loss:.4f}"
-                  f"  acc={acc:.3f}  BUY={counts[0]:,} SELL={counts[1]:,} HOLD={counts[2]:,}"
-                  f"  lr={current_lr:.5f}")
-
+    restore_params(model, best_snap)
+    print(f"\n  Restored best weights (epoch {best_epoch}, val_loss={best_val:.4f})")
     return model
 
 
@@ -199,8 +212,13 @@ def main():
                     help="Forward bars for label generation (default 5)")
     ap.add_argument("--threshold", type=float, default=1.0,
                     help="ATR multiplier for BUY/SELL threshold (default 1.0)")
+    ap.add_argument("--val-frac",  type=float, default=0.2, dest="val_frac",
+                    help="Chronological validation fraction (default 0.2)")
     ap.add_argument("--out",       default="models/ai_model.npz")
     args = ap.parse_args()
+
+    if not (0.05 <= args.val_frac <= 0.5):
+        sys.exit("--val-frac must be between 0.05 and 0.5")
 
     multi_tf = (args.csv_1h is not None) or (args.csv_4h is not None)
 
@@ -224,11 +242,8 @@ def main():
           f"SELL={counts[1]:,} ({pct[1]:.1f}%)  "
           f"HOLD={counts[2]:,} ({pct[2]:.1f}%)")
 
-    cw = compute_class_weights(y)
-    print(f"  Class weights — BUY={cw[0]:.2f}  SELL={cw[1]:.2f}  HOLD={cw[2]:.2f}")
-
     if multi_tf:
-        # ── MULTI-TIMEFRAME ──────────────────────────────────────────────
+        # -- MULTI-TIMEFRAME --------------------------------------------
         csv_1h = args.csv_1h or "data/gold_1h.csv"
         csv_4h = args.csv_4h or "data/gold_4h.csv"
 
@@ -262,29 +277,75 @@ def main():
             "1h": X_1h[idx_1h],
             "4h": X_4h[idx_4h],
         }
+        tfs = list(X_dict.keys())
 
-        print(f"\nTraining MultiTFCNN ({N:,} samples, {args.epochs} epochs) ...")
-        print("  Architecture: 5m+1h+4h branches → concat → dense head\n")
-        model = train_multi(X_dict, y, epochs=args.epochs,
-                            lr=args.lr, class_weights=cw)
+        # Chronological split with embargo = forward bars (label lookahead)
+        tr_idx, va_idx = chrono_split(N, args.val_frac, embargo=args.forward)
+        X_tr = {tf: X_dict[tf][tr_idx] for tf in tfs}
+        X_va = {tf: X_dict[tf][va_idx] for tf in tfs}
+        y_tr, y_va = y[tr_idx], y[va_idx]
+        print(f"\nChronological split: train={len(tr_idx):,}  "
+              f"embargo={args.forward}  val={len(va_idx):,} (last {args.val_frac:.0%})")
 
-        print("\nFinal evaluation:")
-        preds = np.argmax(model.predict(X_dict), axis=1)
-        acc   = float(np.mean(preds == y))
-        print(f"  Overall accuracy: {acc:.3f}")
-        print_confusion(y, preds)
+        cw = compute_class_weights(y_tr)   # weights from TRAIN only
+        print(f"  Class weights (train) - BUY={cw[0]:.2f}  SELL={cw[1]:.2f}  HOLD={cw[2]:.2f}")
+
+        print(f"\nTraining MultiTFCNN ({len(tr_idx):,} samples, up to {args.epochs} epochs) ...")
+        print("  Architecture: 5m+1h+4h branches -> concat -> dense head\n")
+        model = MultiTFCNN()
+        train_model(
+            model,
+            get_batch   = lambda bi: ({tf: X_tr[tf][bi] for tf in tfs}, y_tr[bi]),
+            predict_val = lambda: model.predict(X_va),
+            n_train     = len(tr_idx),
+            y_val       = y_va,
+            epochs      = args.epochs,
+            lr          = args.lr,
+            class_weights = cw,
+        )
+
+        print("\nOut-of-sample evaluation (validation set - never trained on):")
+        val_preds = np.argmax(model.predict(X_va), axis=1)
+        val_acc   = float(np.mean(val_preds == y_va))
+        tr_preds  = np.argmax(model.predict(X_tr), axis=1)
+        tr_acc    = float(np.mean(tr_preds == y_tr))
+        print(f"  Validation accuracy: {val_acc:.3f}   (train accuracy: {tr_acc:.3f} - "
+              f"large gap = overfitting)")
+        print_confusion(y_va, val_preds)
         model.save(args.out)
 
     else:
-        # ── SINGLE-TIMEFRAME (backward compat) ───────────────────────────
-        print(f"\nTraining CNN1D ({N:,} samples, {args.epochs} epochs, single-TF) ...")
-        model = train_single(X_5m, y, epochs=args.epochs,
-                             lr=args.lr, class_weights=cw)
-        print("\nFinal evaluation:")
-        preds = np.argmax(model.predict(X_5m), axis=1)
-        acc   = float(np.mean(preds == y))
-        print(f"  Overall accuracy: {acc:.3f}")
-        print_confusion(y, preds)
+        # -- SINGLE-TIMEFRAME (backward compat) --------------------------
+        tr_idx, va_idx = chrono_split(N, args.val_frac, embargo=args.forward)
+        X_tr, y_tr = X_5m[tr_idx], y[tr_idx]
+        X_va, y_va = X_5m[va_idx], y[va_idx]
+        print(f"\nChronological split: train={len(tr_idx):,}  "
+              f"embargo={args.forward}  val={len(va_idx):,} (last {args.val_frac:.0%})")
+
+        cw = compute_class_weights(y_tr)   # weights from TRAIN only
+        print(f"  Class weights (train) - BUY={cw[0]:.2f}  SELL={cw[1]:.2f}  HOLD={cw[2]:.2f}")
+
+        print(f"\nTraining CNN1D ({len(tr_idx):,} samples, up to {args.epochs} epochs, single-TF) ...")
+        model = CNN1D()
+        train_model(
+            model,
+            get_batch   = lambda bi: (X_tr[bi], y_tr[bi]),
+            predict_val = lambda: model.predict(X_va),
+            n_train     = len(tr_idx),
+            y_val       = y_va,
+            epochs      = args.epochs,
+            lr          = args.lr,
+            class_weights = cw,
+        )
+
+        print("\nOut-of-sample evaluation (validation set - never trained on):")
+        val_preds = np.argmax(model.predict(X_va), axis=1)
+        val_acc   = float(np.mean(val_preds == y_va))
+        tr_preds  = np.argmax(model.predict(X_tr), axis=1)
+        tr_acc    = float(np.mean(tr_preds == y_tr))
+        print(f"  Validation accuracy: {val_acc:.3f}   (train accuracy: {tr_acc:.3f} - "
+              f"large gap = overfitting)")
+        print_confusion(y_va, val_preds)
         model.save(args.out)
 
     print(f"\nDone. Run: npx ts-node src/main.ts --mode ai")

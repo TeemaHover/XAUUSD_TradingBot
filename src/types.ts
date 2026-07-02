@@ -26,6 +26,10 @@ export interface Candle {
   volume: number;
 }
 
+export type EntryType = "market" | "limit";
+/** "r" = TPs are R-multiples of risk (recomputed on fill), "price" = TPs are fixed price levels (range/structure targets) */
+export type TpMode = "r" | "price";
+
 export interface TradeSignal {
   symbol: string;
   direction: Direction;
@@ -36,6 +40,8 @@ export interface TradeSignal {
   reasons: string[];
   timestamp: number;
   regime?: MarketRegime;
+  entryType?: EntryType;
+  tpMode?: TpMode;
 }
 
 export interface WatchlistSignal {
@@ -165,6 +171,14 @@ export interface AppConfig {
     counterTrendMinScore: number;
     /** require a confirmation candle before entry */
     requireConfirmationCandle: boolean;
+    /**
+     * "market" = enter at current price after confirmation (default).
+     * "zone"   = sniper mode: limit entry at the unmitigated OB / unfilled FVG edge,
+     *            stop behind the zone. No zone -> no trade. Confirmation candle is skipped.
+     */
+    entryMode?: "market" | "zone";
+    /** zone mode: max distance from price to zone edge (in ATR) before treating entry as a pending limit */
+    zoneTouchToleranceAtr?: number;
     /** range trade: long when price position <= this % */
     rangeLongThreshold: number;
     /** range trade: short when price position >= this % */
@@ -249,6 +263,10 @@ export interface AppConfig {
     tpRMultiples: number[];
     moveToBreakEvenAfterTp1: boolean;
     trailingStop: boolean;
+    /** pending limit orders are canceled after this many entry-timeframe bars (default 12) */
+    limitExpiryBars?: number;
+    /** replace the last R-multiple TP with the nearest opposing swing when it offers more R */
+    structureTargets?: boolean;
   };
   mockBroker: {
     balance: number;
@@ -291,6 +309,10 @@ export interface OrderRequest {
   stopLoss: number;
   takeProfits: number[];
   comment?: string;
+  /** "limit" places a pending BUY_LIMIT/SELL_LIMIT at `entry` instead of a market order */
+  entryType?: EntryType;
+  /** pending order expiration in seconds from now (limit orders only) */
+  expirySeconds?: number;
 }
 
 export interface Position extends OrderRequest {
