@@ -79,6 +79,11 @@ function compareAi(): void {
     predictions: predictions.size
   });
 
+  if (process.argv.includes("--sweep")) {
+    sweepConfidence(predictions, startIndex);
+    return;
+  }
+
   const ai = runBacktest(candles, config, "backtest-ai.json", {
     startIndex,
     signalProvider: makeAiSignalProvider(predictions)
@@ -94,6 +99,35 @@ function compareAi(): void {
   console.log("or <= rules, the model is not adding edge yet — retrain with more");
   console.log("data / longer forward horizon before trusting it live.");
   console.log("Details: backtest-ai.json / backtest-rules-holdout.json");
+  /* eslint-enable no-console */
+}
+
+/**
+ * Confidence threshold sweep: rerun the AI backtest at a range of
+ * aiConfidenceThreshold values (same predictions, same window, same costs).
+ * Shows the trade count / expectancy trade-off so the threshold is chosen
+ * from evidence instead of a guess. Run: ... --ai [predictions.csv] --sweep
+ */
+function sweepConfidence(
+  predictions: ReturnType<typeof loadAiPredictions>,
+  startIndex: number
+): void {
+  const thresholds = [0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70];
+
+  /* eslint-disable no-console */
+  console.log("\n=== AI CONFIDENCE THRESHOLD SWEEP (same holdout, same costs) ===");
+  console.log(tableHeader);
+  for (const threshold of thresholds) {
+    const swept = JSON.parse(JSON.stringify(config)) as AppConfig;
+    swept.strategy.aiConfidenceThreshold = threshold;
+    const result = runBacktest(candles, swept, "backtest-ai-sweep.json", {
+      startIndex,
+      signalProvider: makeAiSignalProvider(predictions)
+    });
+    console.log(row(`threshold ${threshold.toFixed(2)}`, result));
+  }
+  console.log("\nPick by EXPECTANCY with enough trades to matter (>50 ideally).");
+  console.log("A threshold that only leaves a handful of trades is curve-fitting.");
   /* eslint-enable no-console */
 }
 

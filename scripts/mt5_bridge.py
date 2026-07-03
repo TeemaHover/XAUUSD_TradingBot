@@ -339,7 +339,7 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         import numpy as _np
         _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
         try:
-            from ai_features import extract_sequence, extract_multi_tf_sequence, SEQ_LEN
+            from ai_features import extract_sequence, extract_multi_tf_sequence, SEQ_LEN, CONTEXT_LOOKBACK
             from ai_model    import load_model, MTF_TFS
         except ImportError as e:
             fail(f"AI modules not found: {e}")
@@ -356,7 +356,9 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         _mtype = str(_meta.get("model_type", _np.array("single_tf")))
 
         model = load_model(model_path)
+        _features = model.feature_names   # extract exactly what the model was trained on
         needed = SEQ_LEN + 1
+        fetch = max(needed, CONTEXT_LOOKBACK)   # context features want more history
 
         if _mtype == "multi_tf":
             # ── Multi-TF: fetch 5m, 1h, 4h candles from MT5 directly ──
@@ -365,7 +367,7 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                       "4h": mt5.TIMEFRAME_H4}
             candles_dict = {}
             for tf_name, mt5_tf in tf_map.items():
-                rates = mt5.copy_rates_from_pos(symbol, mt5_tf, 0, needed)
+                rates = mt5.copy_rates_from_pos(symbol, mt5_tf, 0, fetch)
                 if rates is None or len(rates) == 0:
                     return {"direction": "hold", "confidence": 0.0,
                             "reason": f"no {tf_name} candles from MT5 for {symbol}"}
@@ -378,7 +380,7 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                      "volume": float(r["tick_volume"])}
                     for r in rates
                 ]
-            seqs = extract_multi_tf_sequence(candles_dict)
+            seqs = extract_multi_tf_sequence(candles_dict, features=_features)
             direction, confidence = model.predict_one(seqs)
 
         else:
@@ -386,7 +388,7 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             candles = payload.get("candles", [])
             if len(candles) < needed:
                 # Fallback: fetch from MT5
-                rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, needed)
+                rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, fetch)
                 if rates is None or len(rates) == 0:
                     return {"direction": "hold", "confidence": 0.0,
                             "reason": f"no candles from MT5 for {symbol}"}
@@ -399,7 +401,7 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                      "volume": float(r["tick_volume"])}
                     for r in rates
                 ]
-            seq = extract_sequence(candles)
+            seq = extract_sequence(candles, features=_features)
             direction, confidence = model.predict_one(seq)
 
         return {"direction": direction, "confidence": confidence}

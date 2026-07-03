@@ -27,7 +27,7 @@ import sys, os, csv, argparse, bisect
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ai_features import extract_sequence_matrix, SEQ_LEN
+from ai_features import extract_sequence_matrix, SEQ_LEN, CONTEXT_LOOKBACK
 from ai_model import load_model, MultiTFCNN, LABELS
 from ai_train import load_csv, chrono_split
 
@@ -41,6 +41,10 @@ def main():
     ap.add_argument("--out", default="data/ai_predictions.csv")
     ap.add_argument("--val-frac", type=float, default=0.2, dest="val_frac")
     ap.add_argument("--forward", type=int, default=5)
+    ap.add_argument("--embargo", type=int, default=None,
+                    help="bars dropped between train and holdout; MUST match "
+                         "training (= --horizon for triple-barrier labels, "
+                         "= --forward for move labels). Default: --forward")
     ap.add_argument("--all", action="store_true", help="predict all samples (in-sample!)")
     ap.add_argument("--batch", type=int, default=512)
     args = ap.parse_args()
@@ -54,7 +58,9 @@ def main():
         sys.exit(f"Cannot use this model: {e}")
 
     multi_tf = isinstance(model, MultiTFCNN)
-    print(f"Model: {args.model} ({'multi-TF' if multi_tf else 'single-TF'})")
+    features = model.feature_names   # extract exactly what the model was trained on
+    print(f"Model: {args.model} ({'multi-TF' if multi_tf else 'single-TF'}, "
+          f"{len(features)} features: {','.join(features)})")
 
     print(f"Loading {args.csv} ...")
     candles_5m = load_csv(args.csv)
@@ -67,8 +73,9 @@ def main():
     n_samples = len(candles_5m) - SEQ_LEN
     if n_samples <= 0:
         sys.exit("Not enough candles")
-    N = n_samples - args.forward
-    _, val_idx = chrono_split(N, args.val_frac, embargo=args.forward)
+    embargo = args.embargo if args.embargo is not None else args.forward
+    N = n_samples - embargo
+    _, val_idx = chrono_split(N, args.val_frac, embargo=embargo)
 
     pred_idx = np.arange(n_samples) if args.all else val_idx
     j0 = int(pred_idx[0])
@@ -77,10 +84,13 @@ def main():
           f"candles {SEQ_LEN + j0:,}..{SEQ_LEN + int(pred_idx[-1]):,}")
 
     # --- 5m features (only for the needed range) -------------------------
-    # Slice starting at candle j0: sample k of the slice == global sample j0+k.
+    # Slice starts CONTEXT_LOOKBACK candles before j0 so context features
+    # (S/R, OB, slopes) have full history; skip the extra leading samples.
     print("Extracting 5m features ...")
-    X_5m = extract_sequence_matrix(candles_5m[j0:], window=SEQ_LEN)
-    X_5m = X_5m[: len(pred_idx)]
+    slice_start = max(0, j0 - CONTEXT_LOOKBACK)
+    X_5m = extract_sequence_matrix(candles_5m[slice_start:], window=SEQ_LEN, features=features)
+    lead = j0 - slice_start
+    X_5m = X_5m[lead: lead + len(pred_idx)]
 
     # --- multi-TF alignment ----------------------------------------------
     if multi_tf:
@@ -90,8 +100,8 @@ def main():
         candles_1h = load_csv(csv_1h)
         candles_4h = load_csv(csv_4h)
         print("Extracting 1h/4h features ...")
-        X_1h = extract_sequence_matrix(candles_1h, window=SEQ_LEN)
-        X_4h = extract_sequence_matrix(candles_4h, window=SEQ_LEN)
+        X_1h = extract_sequence_matrix(candles_1h, window=SEQ_LEN, features=features)
+        X_4h = extract_sequence_matrix(candles_4h, window=SEQ_LEN, features=features)
 
         def align(candles_slow, X_slow):
             end_times = [candles_slow[j + SEQ_LEN]["time"] for j in range(len(X_slow))]

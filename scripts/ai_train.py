@@ -11,8 +11,19 @@ Multi-TF (sees 5m + 1h + 4h simultaneously):
 Options:
     --epochs      Training epochs (default 300)
     --lr          Learning rate (default 0.001)
-    --forward     Forward bars for label generation (default 5)
-    --threshold   ATR multiplier for BUY/SELL threshold (default 1.0)
+    --features    Feature spec: groups and/or names, e.g. "base,patterns"
+                  (default), "all", "base,patterns,sr_dist,slope_high".
+                  See ai_features.py. The model remembers its feature list.
+    --label-mode  "move" (default, direction of next N bars) or "triple"
+                  (triple-barrier: does TP hit before SL — matches how the
+                  bot actually trades; use with --tp-r/--sl-r/--horizon)
+    --tp-r        triple: TP distance in ATR (default 2.0)
+    --sl-r        triple: SL distance in ATR (default 1.0)
+    --horizon     triple: max bars for a barrier hit (default 96 = 8h on 5m)
+    --stride      use every Nth training sample to reduce window overlap
+                  (default 1 = all; validation always uses all samples)
+    --forward     move-mode: forward bars for labels (default 5)
+    --threshold   move-mode: ATR multiplier for BUY/SELL threshold (default 1.0)
     --val-frac    Fraction of data held out for validation (default 0.2)
     --out         Output model path (default models/ai_model.npz)
 
@@ -27,7 +38,8 @@ import sys, os, csv, argparse, bisect
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
-from ai_features import extract_sequence_matrix, align_tf_index, SEQ_LEN
+from ai_features import (extract_sequence_matrix, align_tf_index, SEQ_LEN,
+                         resolve_features, _rolling_atr_arrays)
 from ai_model    import CNN1D, MultiTFCNN, cross_entropy
 
 
@@ -73,6 +85,58 @@ def make_labels(candles, feature_start: int, forward: int,
         elif down_move >= threshold and down_move > up_move: labels.append(1)
         else:                                                 labels.append(2)
     return np.array(labels, dtype=np.int32)
+
+
+# ------------------------------------------- triple-barrier labelling
+def make_labels_triple(candles, feature_start: int, tp_r: float, sl_r: float,
+                       horizon: int) -> np.ndarray:
+    """
+    Label each bar by simulating the actual trade geometry (vectorized):
+      long : TP = close + tp_r*ATR, SL = close - sl_r*ATR
+      short: TP = close - tp_r*ATR, SL = close + sl_r*ATR
+    BUY  (0) if the long TP is hit strictly before the long SL within `horizon`
+             bars and the short trade does NOT also win;
+    SELL (1) mirrored; HOLD (2) otherwise.
+    Same-bar TP+SL touches count as SL first (conservative).
+    """
+    highs  = np.array([c["high"]  for c in candles], dtype=float)
+    lows   = np.array([c["low"]   for c in candles], dtype=float)
+    closes = np.array([c["close"] for c in candles], dtype=float)
+    atrs   = np.maximum(_rolling_atr_arrays(highs, lows, closes, 14), 1e-8)
+    n = len(candles)
+
+    tp_long  = closes + tp_r * atrs
+    sl_long  = closes - sl_r * atrs
+    tp_short = closes - tp_r * atrs
+    sl_short = closes + sl_r * atrs
+
+    BIG = horizon + 1
+    first_lt = np.full(n, BIG, dtype=np.int32)   # long TP hit bar
+    first_ls = np.full(n, BIG, dtype=np.int32)   # long SL hit bar
+    first_st = np.full(n, BIG, dtype=np.int32)   # short TP hit bar
+    first_ss = np.full(n, BIG, dtype=np.int32)   # short SL hit bar
+
+    for j in range(1, horizon + 1):
+        m = n - j
+        if m <= 0:
+            break
+        fh, fl = highs[j:j + m], lows[j:j + m]
+        for arr, cond in (
+            (first_lt, fh >= tp_long[:m]),
+            (first_ls, fl <= sl_long[:m]),
+            (first_st, fl <= tp_short[:m]),
+            (first_ss, fh >= sl_short[:m]),
+        ):
+            hit = cond & (arr[:m] == BIG)
+            arr[:m][hit] = j
+
+    long_ok  = (first_lt <= horizon) & (first_lt < first_ls)
+    short_ok = (first_st <= horizon) & (first_st < first_ss)
+
+    labels = np.full(n, 2, dtype=np.int32)
+    labels[long_ok & ~short_ok]  = 0
+    labels[short_ok & ~long_ok] = 1
+    return labels[feature_start:]
 
 
 # ------------------------------------------------- chronological split
@@ -216,10 +280,25 @@ def main():
                     help="4h CSV for multi-TF training (e.g. data/gold_4h.csv)")
     ap.add_argument("--epochs",    type=int,   default=300)
     ap.add_argument("--lr",        type=float, default=0.001)
+    ap.add_argument("--features",  default="base,patterns",
+                    help='Feature spec, e.g. "base,patterns" (default), "all", '
+                         '"base,patterns,sr_dist,slope_high,slope_low"')
+    ap.add_argument("--label-mode", choices=["move", "triple"], default="move",
+                    dest="label_mode",
+                    help="move = direction of next N bars (default); "
+                         "triple = triple-barrier (TP before SL, like real trades)")
+    ap.add_argument("--tp-r",     type=float, default=2.0, dest="tp_r",
+                    help="triple: TP distance in ATR (default 2.0)")
+    ap.add_argument("--sl-r",     type=float, default=1.0, dest="sl_r",
+                    help="triple: SL distance in ATR (default 1.0)")
+    ap.add_argument("--horizon",  type=int,   default=96,
+                    help="triple: max bars for a barrier hit (default 96)")
+    ap.add_argument("--stride",   type=int,   default=1,
+                    help="use every Nth TRAINING sample (default 1)")
     ap.add_argument("--forward",   type=int,   default=5,
-                    help="Forward bars for label generation (default 5)")
+                    help="move-mode: forward bars for labels (default 5)")
     ap.add_argument("--threshold", type=float, default=1.0,
-                    help="ATR multiplier for BUY/SELL threshold (default 1.0)")
+                    help="move-mode: ATR multiplier for threshold (default 1.0)")
     ap.add_argument("--val-frac",  type=float, default=0.2, dest="val_frac",
                     help="Chronological validation fraction (default 0.2)")
     ap.add_argument("--out",       default="models/ai_model.npz")
@@ -228,6 +307,9 @@ def main():
     if not (0.05 <= args.val_frac <= 0.5):
         sys.exit("--val-frac must be between 0.05 and 0.5")
 
+    feature_names = resolve_features(args.features)
+    print(f"Features ({len(feature_names)}): {', '.join(feature_names)}")
+
     multi_tf = (args.csv_1h is not None) or (args.csv_4h is not None)
 
     print(f"Loading {args.csv} ...")
@@ -235,14 +317,26 @@ def main():
     print(f"  {len(candles_5m):,} 5m candles")
 
     print(f"Extracting 5m sequences (window={SEQ_LEN}) ...")
-    X_5m = extract_sequence_matrix(candles_5m, window=SEQ_LEN)
+    X_5m = extract_sequence_matrix(candles_5m, window=SEQ_LEN, features=feature_names)
     print(f"  5m matrix: {X_5m.shape}")
 
-    print(f"Generating labels (forward={args.forward}, threshold={args.threshold}x ATR) ...")
-    y = make_labels(candles_5m, feature_start=SEQ_LEN,
-                    forward=args.forward, threshold_atr=args.threshold)
-    # Trim labels to valid training range (exclude last `forward` samples)
-    N = min(len(X_5m), len(y) - args.forward)
+    # Embargo between train and val must cover the label lookahead
+    embargo = args.horizon if args.label_mode == "triple" else args.forward
+
+    if args.label_mode == "triple":
+        print(f"Generating TRIPLE-BARRIER labels (TP={args.tp_r}xATR, "
+              f"SL={args.sl_r}xATR, horizon={args.horizon} bars) ...")
+        print(f"  NOTE: when predicting for backtests, pass --embargo {args.horizon} "
+              f"to ai_backtest_predict.py")
+        y = make_labels_triple(candles_5m, feature_start=SEQ_LEN,
+                               tp_r=args.tp_r, sl_r=args.sl_r, horizon=args.horizon)
+    else:
+        print(f"Generating labels (forward={args.forward}, threshold={args.threshold}x ATR) ...")
+        y = make_labels(candles_5m, feature_start=SEQ_LEN,
+                        forward=args.forward, threshold_atr=args.threshold)
+
+    # Trim labels to valid training range (exclude the incomplete tail)
+    N = min(len(X_5m), len(y) - embargo)
     X_5m = X_5m[:N]; y = y[:N]
     counts = np.bincount(y, minlength=3)
     pct    = counts / counts.sum() * 100
@@ -261,8 +355,8 @@ def main():
         print(f"  1h: {len(candles_1h):,} candles   4h: {len(candles_4h):,} candles")
 
         print("Extracting 1h and 4h sequences ...")
-        X_1h = extract_sequence_matrix(candles_1h, window=SEQ_LEN)
-        X_4h = extract_sequence_matrix(candles_4h, window=SEQ_LEN)
+        X_1h = extract_sequence_matrix(candles_1h, window=SEQ_LEN, features=feature_names)
+        X_4h = extract_sequence_matrix(candles_4h, window=SEQ_LEN, features=feature_names)
         print(f"  1h matrix: {X_1h.shape}   4h matrix: {X_4h.shape}")
 
         # Precompute window-end timestamps for alignment
@@ -287,20 +381,22 @@ def main():
         }
         tfs = list(X_dict.keys())
 
-        # Chronological split with embargo = forward bars (label lookahead)
-        tr_idx, va_idx = chrono_split(N, args.val_frac, embargo=args.forward)
+        # Chronological split with embargo = label lookahead
+        tr_idx, va_idx = chrono_split(N, args.val_frac, embargo=embargo)
+        if args.stride > 1:
+            tr_idx = tr_idx[::args.stride]
         X_tr = {tf: X_dict[tf][tr_idx] for tf in tfs}
         X_va = {tf: X_dict[tf][va_idx] for tf in tfs}
         y_tr, y_va = y[tr_idx], y[va_idx]
-        print(f"\nChronological split: train={len(tr_idx):,}  "
-              f"embargo={args.forward}  val={len(va_idx):,} (last {args.val_frac:.0%})")
+        print(f"\nChronological split: train={len(tr_idx):,} (stride={args.stride})  "
+              f"embargo={embargo}  val={len(va_idx):,} (last {args.val_frac:.0%})")
 
         cw = compute_class_weights(y_tr)   # weights from TRAIN only
         print(f"  Class weights (train) - BUY={cw[0]:.2f}  SELL={cw[1]:.2f}  HOLD={cw[2]:.2f}")
 
         print(f"\nTraining MultiTFCNN ({len(tr_idx):,} samples, up to {args.epochs} epochs) ...")
         print("  Architecture: 5m+1h+4h branches -> concat -> dense head\n")
-        model = MultiTFCNN()
+        model = MultiTFCNN(feature_names=feature_names)
         train_model(
             model,
             get_batch   = lambda bi: ({tf: X_tr[tf][bi] for tf in tfs}, y_tr[bi]),
@@ -324,17 +420,19 @@ def main():
 
     else:
         # -- SINGLE-TIMEFRAME (backward compat) --------------------------
-        tr_idx, va_idx = chrono_split(N, args.val_frac, embargo=args.forward)
+        tr_idx, va_idx = chrono_split(N, args.val_frac, embargo=embargo)
+        if args.stride > 1:
+            tr_idx = tr_idx[::args.stride]
         X_tr, y_tr = X_5m[tr_idx], y[tr_idx]
         X_va, y_va = X_5m[va_idx], y[va_idx]
-        print(f"\nChronological split: train={len(tr_idx):,}  "
-              f"embargo={args.forward}  val={len(va_idx):,} (last {args.val_frac:.0%})")
+        print(f"\nChronological split: train={len(tr_idx):,} (stride={args.stride})  "
+              f"embargo={embargo}  val={len(va_idx):,} (last {args.val_frac:.0%})")
 
         cw = compute_class_weights(y_tr)   # weights from TRAIN only
         print(f"  Class weights (train) - BUY={cw[0]:.2f}  SELL={cw[1]:.2f}  HOLD={cw[2]:.2f}")
 
         print(f"\nTraining CNN1D ({len(tr_idx):,} samples, up to {args.epochs} epochs, single-TF) ...")
-        model = CNN1D()
+        model = CNN1D(feature_names=feature_names)
         train_model(
             model,
             get_batch   = lambda bi: (X_tr[bi], y_tr[bi]),

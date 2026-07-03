@@ -29,21 +29,52 @@ if sys.platform == "darwin":
         "ignore", message=".*encountered in matmul", category=RuntimeWarning
     )
 
+from ai_features import DEFAULT_FEATURES, ALL_FEATURES, BASE_FEATURES
+
 LABELS     = {0: "long", 1: "short", 2: "hold"}
 SEQ_LEN    = 30
-N_FEATURES = 12   # must match ai_features.N_FEATURES — models trained on 7 features must be retrained
+N_FEATURES = len(DEFAULT_FEATURES)   # default input width; actual models are dynamic
 N_CLASSES  = 3
 MTF_TFS    = ["5m", "1h", "4h"]   # timeframe order used by MultiTFCNN
 BRANCH_DIM = 64                    # GAP output size per branch
 
 
-def _check_feature_count(npz_data, path: str) -> None:
-    """Refuse to load weights trained on a different feature set."""
-    saved = int(npz_data.get("n_features", np.array(7)))
-    if saved != N_FEATURES:
+def resolve_saved_features(npz_data, path: str):
+    """
+    Return (n_features, feature_names) stored in a model .npz.
+    Legacy models: 12 features -> the original default set, 7 -> base set.
+    Raises if the model uses features this code no longer provides.
+    """
+    n = int(npz_data.get("n_features", np.array(7)))
+    if "feature_names" in npz_data:
+        names = [str(s) for s in npz_data["feature_names"]]
+    elif n == len(DEFAULT_FEATURES):
+        names = list(DEFAULT_FEATURES)
+    elif n == len(BASE_FEATURES):
+        names = list(BASE_FEATURES)
+    else:
         raise ValueError(
-            f"Model at {path} was trained with {saved} features but the code now "
-            f"uses {N_FEATURES}. Retrain it: python scripts/ai_train.py <csv> ..."
+            f"Model at {path} has {n} features but stores no feature names and "
+            f"matches no known legacy set. Retrain it: python scripts/ai_train.py <csv> ..."
+        )
+    unknown = [f for f in names if f not in ALL_FEATURES]
+    if unknown:
+        raise ValueError(
+            f"Model at {path} was trained with features {unknown} that "
+            f"ai_features.py no longer provides. Retrain the model."
+        )
+    if len(names) != n:
+        raise ValueError(f"Model at {path}: n_features={n} but {len(names)} feature names stored.")
+    return n, names
+
+
+def _check_input_width(npz_data, path: str, expected: int) -> None:
+    saved = int(npz_data.get("n_features", np.array(7)))
+    if saved != expected:
+        raise ValueError(
+            f"Model at {path} was trained with {saved} features but this instance "
+            f"expects {expected}. Load it via load_model(path) so the input width "
+            f"is set automatically, or retrain."
         )
 
 
@@ -174,9 +205,12 @@ class AdamMixin:
 class CNN1D(AdamMixin):
     """Single-timeframe 1D CNN. Kept for backward compatibility."""
 
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, n_features: int = None,
+                 feature_names: list = None):
         rng = np.random.default_rng(seed)
-        self.conv1 = Conv1DLayer(N_FEATURES, 32, kernel=3, rng=rng)
+        self.feature_names = list(feature_names) if feature_names else list(DEFAULT_FEATURES)
+        self.n_features = n_features if n_features is not None else len(self.feature_names)
+        self.conv1 = Conv1DLayer(self.n_features, 32, kernel=3, rng=rng)
         self.conv2 = Conv1DLayer(32, 64, kernel=5, rng=rng)
         self.fc1   = DenseLayer(64, 32, rng=rng)
         self.fc2   = DenseLayer(32, N_CLASSES, rng=rng)
@@ -247,7 +281,8 @@ class CNN1D(AdamMixin):
         os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
         np.savez(path,
                  model_type=np.array("single_tf"),
-                 n_features=np.array(N_FEATURES),
+                 n_features=np.array(self.n_features),
+                 feature_names=np.array(self.feature_names),
                  conv1_W=self.conv1.W, conv1_b=self.conv1.b,
                  conv2_W=self.conv2.W, conv2_b=self.conv2.b,
                  fc1_W=self.fc1.W,     fc1_b=self.fc1.b,
@@ -257,7 +292,8 @@ class CNN1D(AdamMixin):
 
     def load(self, path: str):
         d = np.load(path, allow_pickle=True)
-        _check_feature_count(d, path)
+        _check_input_width(d, path, self.n_features)
+        _, self.feature_names = resolve_saved_features(d, path)
         self.conv1.W = d["conv1_W"].astype(np.float32)
         self.conv1.b = d["conv1_b"].astype(np.float32)
         self.conv2.W = d["conv2_W"].astype(np.float32)
@@ -291,13 +327,16 @@ class MultiTFCNN(AdamMixin):
 
     TIMEFRAMES = MTF_TFS   # ["5m", "1h", "4h"]
 
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, n_features: int = None,
+                 feature_names: list = None):
         rng = np.random.default_rng(seed)
+        self.feature_names = list(feature_names) if feature_names else list(DEFAULT_FEATURES)
+        self.n_features = n_features if n_features is not None else len(self.feature_names)
         # One independent conv branch per TF
         self.branches: Dict[str, Dict] = {}
         for tf in self.TIMEFRAMES:
             self.branches[tf] = {
-                "conv1": Conv1DLayer(N_FEATURES, 32, kernel=3, rng=rng),
+                "conv1": Conv1DLayer(self.n_features, 32, kernel=3, rng=rng),
                 "conv2": Conv1DLayer(32, BRANCH_DIM, kernel=5, rng=rng),
             }
         # Shared dense head
@@ -411,7 +450,8 @@ class MultiTFCNN(AdamMixin):
     def save(self, path: str):
         os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
         arrays = {"model_type": np.array("multi_tf"), "t": np.array(self._t),
-                  "n_features": np.array(N_FEATURES)}
+                  "n_features": np.array(self.n_features),
+                  "feature_names": np.array(self.feature_names)}
         for tf in self.TIMEFRAMES:
             b = self.branches[tf]
             arrays[f"{tf}_conv1_W"] = b["conv1"].W
@@ -425,7 +465,8 @@ class MultiTFCNN(AdamMixin):
 
     def load(self, path: str):
         d = np.load(path, allow_pickle=True)
-        _check_feature_count(d, path)
+        _check_input_width(d, path, self.n_features)
+        _, self.feature_names = resolve_saved_features(d, path)
         for tf in self.TIMEFRAMES:
             b = self.branches[tf]
             b["conv1"].W = d[f"{tf}_conv1_W"].astype(np.float32)
@@ -455,12 +496,17 @@ class MultiTFCNN(AdamMixin):
 # ───────────────────────────── model factory ──────────────────────────────
 
 def load_model(path: str):
-    """Load either CNN1D or MultiTFCNN from .npz, detecting type automatically."""
+    """
+    Load either CNN1D or MultiTFCNN from .npz, detecting type, input width,
+    and feature list automatically. Use model.feature_names when extracting
+    features for prediction so inputs always match training.
+    """
     d = np.load(path, allow_pickle=True)
     model_type = str(d.get("model_type", np.array("single_tf")))
+    n_features, feature_names = resolve_saved_features(d, path)
     if model_type == "multi_tf":
-        m = MultiTFCNN()
+        m = MultiTFCNN(n_features=n_features, feature_names=feature_names)
     else:
-        m = CNN1D()
+        m = CNN1D(n_features=n_features, feature_names=feature_names)
     m.load(path)
     return m
