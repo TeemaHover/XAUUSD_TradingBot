@@ -2,7 +2,21 @@ import fs from "node:fs";
 import path from "node:path";
 import { AppConfig } from "../types";
 
+/** Minimal .env loader (no dependency): KEY=VALUE lines, existing env wins. */
+function loadDotEnv(envPath = ".env"): void {
+  const resolved = path.resolve(envPath);
+  if (!fs.existsSync(resolved)) return;
+  for (const line of fs.readFileSync(resolved, "utf8").split(/\r?\n/)) {
+    const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/.exec(line);
+    if (!match || line.trim().startsWith("#")) continue;
+    const [, key, rawValue] = match;
+    if (process.env[key] !== undefined) continue;
+    process.env[key] = rawValue.replace(/^["']|["']$/g, "");
+  }
+}
+
 export function loadConfig(configPath = "config/default.json"): AppConfig {
+  loadDotEnv();
   const resolved = path.resolve(configPath);
   const raw = fs.readFileSync(resolved, "utf8");
   const config = JSON.parse(raw) as AppConfig;
@@ -51,6 +65,10 @@ function applyEnvOverrides(config: AppConfig): void {
   const intervalSeconds = envNumber("BOT_INTERVAL_SECONDS");
   if (intervalSeconds !== undefined) config.bot.intervalSeconds = intervalSeconds;
 
+  if (process.env.BROKER_MODE !== undefined) {
+    config.broker.mode = process.env.BROKER_MODE.trim() as typeof config.broker.mode;
+  }
+
   const telegramEnabled = envBoolean("TELEGRAM_ENABLED");
   if (telegramEnabled !== undefined) config.alerts.telegram.enabled = telegramEnabled;
   if (process.env.TELEGRAM_BOT_TOKEN !== undefined) {
@@ -67,8 +85,8 @@ function validateConfig(config: AppConfig): void {
   assertPositive(config.bot.intervalSeconds, "bot.intervalSeconds");
   if (!config.journal) throw new Error("Invalid config: journal is required");
   if (!config.journal.path) throw new Error("Invalid config: journal.path is required");
-  if (!["mock", "mt5"].includes(config.broker.mode)) {
-    throw new Error("Invalid config: broker.mode must be mock or mt5");
+  if (!["mock", "mt5", "metaapi"].includes(config.broker.mode)) {
+    throw new Error("Invalid config: broker.mode must be mock, mt5, or metaapi");
   }
   assertPositive(config.risk.riskPerTrade, "risk.riskPerTrade");
   assertNonNegative(config.risk.maxDailyLoss, "risk.maxDailyLoss");

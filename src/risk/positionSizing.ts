@@ -83,4 +83,14 @@ export class RiskGuard {
 
     this.consecutiveLosses = 0;
   }
+
+  /**
+   * New trading day: clear daily loss and the consecutive-loss streak.
+   * Mirrors live behavior, where the guard is rehydrated from the current
+   * day's trade history on every cycle.
+   */
+  resetDaily(): void {
+    this.dailyLoss = 0;
+    this.consecutiveLosses = 0;
+  }
 }

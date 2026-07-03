@@ -246,7 +246,16 @@ export function runBacktest(
   const maxHoldBars = options.maxHoldBars ?? 96;
   const endIndex = Math.min(candles.length, options.endIndex ?? candles.length);
 
+  let currentDay = -1;
   for (let i = startIndex; i < endIndex - 1; i += 1) {
+    // New UTC day: reset daily loss + consecutive-loss streak (mirrors live,
+    // where the risk guard is rehydrated from the current day's history).
+    const candleDay = Math.floor(candles[i].time / 86_400_000);
+    if (candleDay !== currentDay) {
+      currentDay = candleDay;
+      riskGuard.resetDaily();
+    }
+
     const entryWindow = candles.slice(0, i + 1);
     const trendWindow = candles.slice(Math.max(0, i - 260), i + 1);
     const higherTrendWindow = candles.slice(Math.max(0, i - 260), i + 1);

@@ -11,6 +11,9 @@
     "backtest": "node dist/src/backtest/runBacktest.js",
     "test": "node dist/tests/runTests.js"
   },
+  "dependencies": {
+    "metaapi.cloud-sdk": "^29.1.0"
+  },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "ts-node": "^10.9.2",

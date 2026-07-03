@@ -1,6 +1,8 @@
+import { spawn } from "node:child_process";
+import path from "node:path";
 import { AppConfig, Candle } from "../types";
-import { Mt5Broker } from "../broker/Mt5Broker";
 import { detectSR } from "./srDetector";
+import { detectTrend } from "./trendDetector";
 import { logger } from "../logger/logger";
 
 export interface AiPrediction {
@@ -20,38 +22,72 @@ export interface AiSignalResult {
   reasons: string[];
 }
 
+function toPlainCandles(candles: Candle[]): Array<Record<string, number>> {
+  return candles.map((c) => ({
+    time: c.time,
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close,
+    volume: c.volume ?? 1
+  }));
+}
+
+function resolvePython(configuredPath?: string): string {
+  if (configuredPath && configuredPath !== "python") return configuredPath;
+  return process.platform === "win32" ? "python" : "python3";
+}
+
 /**
- * Call the Python AI bridge to get a prediction for the current candles.
- * Falls back to "hold" if the model file doesn't exist yet.
+ * Get an AI prediction for the current candles by running the local Python
+ * predictor (scripts/ai_predict_live.py). Broker-agnostic: candles come from
+ * whichever broker is active (mock, mt5, or metaapi). Only needs numpy.
+ * Falls back to "hold" on any failure.
  */
 export async function aiPredict(
-  broker: Mt5Broker,
-  candles: Candle[],
-  modelPath: string
+  candleSets: Record<string, Candle[]>,
+  modelPath: string,
+  pythonPath?: string
 ): Promise<AiPrediction> {
+  const scriptPath = path.resolve("scripts/ai_predict_live.py");
+  const payload = JSON.stringify({
+    modelPath,
+    candles: Object.fromEntries(
+      Object.entries(candleSets).map(([tf, candles]) => [tf, toPlainCandles(candles)])
+    )
+  });
+
   try {
-    // The bridge detects model type (single-TF vs multi-TF) from the .npz file
-    // and fetches the required candles from MT5 directly for multi-TF models.
-    // We still pass candles as a fallback for single-TF models.
-    const symbol = (broker as any).config?.symbol ?? "GOLD";
-    const result = await (broker as any).call("ai_predict", {
-      symbol,
-      modelPath,
-      candles: candles.map((c) => ({
-        time: c.time,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-        volume: c.volume ?? 1
-      }))
+    const stdout = await new Promise<string>((resolve, reject) => {
+      const child = spawn(resolvePython(pythonPath), [scriptPath], { cwd: process.cwd() });
+      let out = "";
+      let err = "";
+      const timer = setTimeout(() => {
+        child.kill();
+        reject(new Error("AI predictor timed out after 30s"));
+      }, 30000);
+      child.stdout.on("data", (chunk) => { out += chunk; });
+      child.stderr.on("data", (chunk) => { err += chunk; });
+      child.on("error", (error) => { clearTimeout(timer); reject(error); });
+      child.on("close", (code) => {
+        clearTimeout(timer);
+        if (code === 0 && out.trim()) resolve(out);
+        else reject(new Error(err.trim() || `predictor exited with code ${code}`));
+      });
+      child.stdin.write(payload);
+      child.stdin.end();
     });
-    return result as AiPrediction;
+
+    const result = JSON.parse(stdout.trim()) as AiPrediction;
+    if (result.reason) {
+      logger.warn("AI predictor returned hold", { reason: result.reason });
+    }
+    return result;
   } catch (err) {
     logger.warn("AI predict failed, returning hold", {
       message: err instanceof Error ? err.message : String(err)
     });
-    return { direction: "hold", confidence: 0, reason: "bridge error" };
+    return { direction: "hold", confidence: 0, reason: "predictor error" };
   }
 }
 
@@ -63,7 +99,8 @@ export function buildAiSignal(
   prediction: AiPrediction,
   candles: Candle[],
   spread: number,
-  config: AppConfig
+  config: AppConfig,
+  higherTrendCandles?: Candle[]
 ): AiSignalResult {
   const threshold = config.strategy.aiConfidenceThreshold ?? 0.5;
   const reasons: string[] = [
@@ -79,6 +116,24 @@ export function buildAiSignal(
       confidence: prediction.confidence,
       reasons: [...reasons, "AI says HOLD — no trade"]
     };
+  }
+
+  // Higher-timeframe trend gate: the model has a long bias, so refuse trades
+  // that fight the 4h trend (longs in a downtrend, shorts in an uptrend).
+  if ((config.strategy.aiTrendFilter ?? true) && higherTrendCandles && higherTrendCandles.length > 0) {
+    const trend = detectTrend(higherTrendCandles, config);
+    const fightsTrend =
+      (prediction.direction === "long" && trend.bias === "bearish") ||
+      (prediction.direction === "short" && trend.bias === "bullish");
+    if (fightsTrend) {
+      return {
+        status: "rejected",
+        score: 0,
+        confidence: prediction.confidence,
+        reasons: [...reasons, `Trend filter: ${prediction.direction.toUpperCase()} against ${trend.bias} higher-TF trend — no trade`]
+      };
+    }
+    reasons.push(`Trend filter: higher-TF trend is ${trend.bias} — OK`);
   }
 
   if (prediction.confidence < threshold) {

@@ -1,6 +1,8 @@
 import { MockBroker } from "./broker/MockBroker";
 import { Mt5Broker } from "./broker/Mt5Broker";
+import { MetaApiBroker } from "./broker/MetaApiBroker";
 import { Broker } from "./broker/Broker";
+import { sampleCandles } from "./data/sampleCandles";
 import { loadConfig } from "./config/loadConfig";
 import { DashboardServer, DashboardState } from "./dashboard/dashboardServer";
 import { ExecutionEngine } from "./execution/executionEngine";
@@ -35,14 +37,34 @@ async function createBroker(config: AppConfig): Promise<Broker> {
     return broker;
   }
 
-  const mt5 = new Mt5Broker(config);
-  await mt5.connect();
-  const [entryCandles, trendCandles, higherTrendCandles] = await Promise.all([
-    mt5.getCandles(config.symbol, config.timeframes.entry, config.mt5.bars.entry),
-    mt5.getCandles(config.symbol, config.timeframes.trend, config.mt5.bars.trend),
-    mt5.getCandles(config.symbol, config.timeframes.higherTrend, config.mt5.bars.higherTrend)
-  ]);
-  await mt5.disconnect();
+  if (config.broker.mode === "metaapi") {
+    const broker = new MetaApiBroker(config);
+    await broker.connect();
+    return broker;
+  }
+
+  // Mock mode: try seeding real candles through the MT5 bridge; if the
+  // bridge is unavailable (e.g. macOS), fall back to generated samples.
+  let entryCandles: Candle[];
+  let trendCandles: Candle[];
+  let higherTrendCandles: Candle[];
+  try {
+    const mt5 = new Mt5Broker(config);
+    await mt5.connect();
+    [entryCandles, trendCandles, higherTrendCandles] = await Promise.all([
+      mt5.getCandles(config.symbol, config.timeframes.entry, config.mt5.bars.entry),
+      mt5.getCandles(config.symbol, config.timeframes.trend, config.mt5.bars.trend),
+      mt5.getCandles(config.symbol, config.timeframes.higherTrend, config.mt5.bars.higherTrend)
+    ]);
+    await mt5.disconnect();
+  } catch (error) {
+    logger.warn("MT5 bridge unavailable, mock broker will use generated sample candles", {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    entryCandles = sampleCandles(config.mt5.bars.entry);
+    trendCandles = sampleCandles(config.mt5.bars.trend, 7);
+    higherTrendCandles = sampleCandles(config.mt5.bars.higherTrend, 13);
+  }
 
   const broker = new MockBroker(config.mockBroker.balance, config.mockBroker.spread, {
     [config.timeframes.entry]: entryCandles,
@@ -135,9 +157,17 @@ async function scanOnce(
   const spread = await broker.getSpread(config.symbol);
   // --- AI mode: bypass rule engine, use neural network ---
   let decision: ReturnType<typeof calculateSignal>;
-  if (config.strategy.aiMode && broker instanceof Mt5Broker) {
-    const prediction = await aiPredict(broker, entryCandles, config.strategy.aiModelPath);
-    const aiResult = buildAiSignal(prediction, entryCandles, spread, config);
+  if (config.strategy.aiMode) {
+    const prediction = await aiPredict(
+      {
+        [config.timeframes.entry]: entryCandles,
+        [config.timeframes.trend]: trendCandles,
+        [config.timeframes.higherTrend]: higherTrendCandles
+      },
+      config.strategy.aiModelPath,
+      config.mt5.pythonPath
+    );
+    const aiResult = buildAiSignal(prediction, entryCandles, spread, config, higherTrendCandles);
     decision = {
       status: aiResult.status,
       score: aiResult.score,

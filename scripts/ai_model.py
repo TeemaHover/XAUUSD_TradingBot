@@ -16,7 +16,18 @@ Labels:  0=BUY  1=SELL  2=HOLD
 
 import numpy as np
 import os
+import sys
+import warnings
 from typing import Dict, List, Tuple
+
+# Apple Silicon: numpy's Accelerate-backed matmul raises spurious
+# "divide by zero/overflow/invalid value encountered in matmul" warnings even
+# when all values are finite. Silence them; real explosions are caught by the
+# explicit finiteness checks in the training loop and optimizer.
+if sys.platform == "darwin":
+    warnings.filterwarnings(
+        "ignore", message=".*encountered in matmul", category=RuntimeWarning
+    )
 
 LABELS     = {0: "long", 1: "short", 2: "hold"}
 SEQ_LEN    = 30
@@ -135,9 +146,20 @@ class AdamMixin:
 
     def adam_step(self, grads: Dict[str, np.ndarray], param_map: Dict,
                   lr: float = 1e-3, beta1: float = 0.9,
-                  beta2: float = 0.999, eps: float = 1e-8):
+                  beta2: float = 0.999, eps: float = 1e-8,
+                  clip_norm: float = 5.0):
+        # ---- stability: skip non-finite batches, clip global gradient norm
+        sq_sum = 0.0
+        for g in grads.values():
+            sq_sum += float(np.sum(np.asarray(g, dtype=np.float64) ** 2))
+        norm = np.sqrt(sq_sum)
+        if not np.isfinite(norm):
+            return  # bad batch (NaN/inf gradients) — don't poison the weights
+        scale = 1.0 if norm <= clip_norm else clip_norm / (norm + 1e-12)
+
         self._t += 1
         for k, g in grads.items():
+            g = (g * scale).astype(np.float32)
             self._m[k] = beta1 * self._m[k] + (1 - beta1) * g
             self._v[k] = beta2 * self._v[k] + (1 - beta2) * g**2
             m_hat = self._m[k] / (1 - beta1**self._t)

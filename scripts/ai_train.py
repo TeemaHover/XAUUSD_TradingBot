@@ -169,6 +169,14 @@ def train_model(model, get_batch, predict_val, n_train: int, y_val: np.ndarray,
         val_probs  = predict_val()
         val_loss   = cross_entropy(val_probs, y_val)   # unweighted: honest OOS loss
 
+        # Real explosion detector (spurious Accelerate warnings are silenced,
+        # so verify the actual numbers).
+        if not (np.isfinite(train_loss) and np.isfinite(val_loss)):
+            print(f"  [ABORT] non-finite loss at epoch {epoch} "
+                  f"(train={train_loss}, val={val_loss}) — training diverged. "
+                  f"Restoring best weights from epoch {best_epoch}.")
+            break
+
         if val_loss < best_val - 1e-4:
             best_val   = val_loss
             best_snap  = snapshot_params(model)

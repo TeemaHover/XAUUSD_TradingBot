@@ -137,7 +137,7 @@ export interface AppConfig {
     intervalSeconds: number;
   };
   broker: {
-    mode: "mock" | "mt5";
+    mode: "mock" | "mt5" | "metaapi";
   };
   timeframes: {
     entry: Timeframe;
@@ -193,6 +193,8 @@ export interface AppConfig {
     aiConfidenceThreshold: number;
     /** path to trained model weights (default models/ai_model.npz) */
     aiModelPath: string;
+    /** reject AI trades that fight the higher-timeframe trend (default true) */
+    aiTrendFilter?: boolean;
     srProximityAtr: number;
     srZoneToleranceAtr: number;
   };

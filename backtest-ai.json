@@ -1,18 +1,2705 @@
 {
-  "totalTrades": 0,
-  "winRate": 0,
-  "profitFactor": 0,
-  "maxDrawdown": 0,
-  "expectancy": 0,
-  "totalReturn": 0,
-  "averageR": 0,
-  "endingBalance": 10000,
+  "totalTrades": 158,
+  "winRate": 0.5443037974683544,
+  "profitFactor": 1.4481675290162757,
+  "maxDrawdown": 0.1326264063075001,
+  "expectancy": 0.2036059636746479,
+  "totalReturn": 0.17084473450510232,
+  "averageR": 0.2036059636746479,
+  "endingBalance": 11708.447345051023,
   "performanceSummary": {
-    "grossWinR": 0,
-    "grossLossR": 0,
-    "rejectedByRisk": 0,
-    "rejectedByTradeGuard": 0,
+    "grossWinR": 103.95036039508243,
+    "grossLossR": 71.78061813448805,
+    "rejectedByRisk": 54,
+    "rejectedByTradeGuard": 27,
     "canceledLimitOrders": 0
   },
-  "trades": []
+  "trades": [
+    {
+      "entryTime": 1764543900000,
+      "exitTime": 1764543900000,
+      "direction": "short",
+      "entry": 4224.873,
+      "stopLoss": 4226.143357142857,
+      "takeProfits": [
+        4223.602642857142,
+        4222.332285714285,
+        4221.061928571427
+      ],
+      "resultR": 1.812081979195967,
+      "score": 57,
+      "exitReason": "all_targets",
+      "commissionR": 0.1092,
+      "slippageR": 0.0787180208040329
+    },
+    {
+      "entryTime": 1764630300000,
+      "exitTime": 1764631500000,
+      "direction": "long",
+      "entry": 4230.9400000000005,
+      "stopLoss": 4229.842732142857,
+      "takeProfits": [
+        4232.037267857144,
+        4233.134535714287,
+        4234.231803571431
+      ],
+      "resultR": 1.7839959109894095,
+      "score": 58,
+      "exitReason": "all_targets",
+      "commissionR": 0.1248686389479782,
+      "slippageR": 0.09113545006261228
+    },
+    {
+      "entryTime": 1764634500000,
+      "exitTime": 1764634500000,
+      "direction": "long",
+      "entry": 4226.76,
+      "stopLoss": 4225.056500000001,
+      "takeProfits": [
+        4228.4635,
+        4230.1669999999995,
+        4231.870499999999
+      ],
+      "resultR": -1.1384621189813449,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.07975944800980243,
+      "slippageR": 0.05870267097154225
+    },
+    {
+      "entryTime": 1764715500000,
+      "exitTime": 1764716400000,
+      "direction": "long",
+      "entry": 4205.87,
+      "stopLoss": 4204.818642857143,
+      "takeProfits": [
+        4206.921357142857,
+        4207.972714285715,
+        4209.024071428572
+      ],
+      "resultR": -1.2278865714927043,
+      "score": 60,
+      "exitReason": "stop_loss",
+      "commissionR": 0.13277141421301575,
+      "slippageR": 0.09511515727968854
+    },
+    {
+      "entryTime": 1764801900000,
+      "exitTime": 1764802800000,
+      "direction": "long",
+      "entry": 4202.59,
+      "stopLoss": 4201.7793571428565,
+      "takeProfits": [
+        4203.400642857144,
+        4204.211285714287,
+        4205.021928571431
+      ],
+      "resultR": 1.7040853089517378,
+      "score": 57,
+      "exitReason": "all_targets",
+      "commissionR": 0.17255580480289828,
+      "slippageR": 0.12335888624536383
+    },
+    {
+      "entryTime": 1764808500000,
+      "exitTime": 1764809400000,
+      "direction": "long",
+      "entry": 4214.72,
+      "stopLoss": 4211.701428571428,
+      "takeProfits": [
+        4217.738571428573,
+        4220.7571428571455,
+        4223.775714285718
+      ],
+      "resultR": -1.0772825703277382,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.04415431665998031,
+      "slippageR": 0.03312825366775794
+    },
+    {
+      "entryTime": 1764889500000,
+      "exitTime": 1764889500000,
+      "direction": "long",
+      "entry": 4208.66,
+      "stopLoss": 4207.306196428571,
+      "takeProfits": [
+        4210.013803571429,
+        4211.367607142858,
+        4212.721410714287
+      ],
+      "resultR": -1.1765257851433941,
+      "score": 60,
+      "exitReason": "stop_loss",
+      "commissionR": 0.10265982547951431,
+      "slippageR": 0.07386595966387965
+    },
+    {
+      "entryTime": 1764894900000,
+      "exitTime": 1764896700000,
+      "direction": "long",
+      "entry": 4203.49,
+      "stopLoss": 4198.451303571429,
+      "takeProfits": [
+        4208.528696428571,
+        4213.567392857141,
+        4218.606089285712
+      ],
+      "resultR": -1.0449654781148379,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.025119075098182224,
+      "slippageR": 0.019846403016655727
+    },
+    {
+      "entryTime": 1766365200000,
+      "exitTime": 1766393700000,
+      "direction": "long",
+      "entry": 4365.01,
+      "stopLoss": 4337.683946428571,
+      "takeProfits": [
+        4392.336053571429,
+        4419.662107142858,
+        4446.988160714287
+      ],
+      "resultR": 0.9935348212944326,
+      "score": 55,
+      "exitReason": "timeout",
+      "commissionR": 0.0028056674725016393,
+      "slippageR": 0.0036595112330657276
+    },
+    {
+      "entryTime": 1766405700000,
+      "exitTime": 1766407800000,
+      "direction": "long",
+      "entry": 4406.9800000000005,
+      "stopLoss": 4405.223089285714,
+      "takeProfits": [
+        4408.736910714287,
+        4410.493821428573,
+        4412.250732142859
+      ],
+      "resultR": 1.8649115468928834,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.07817036433524423,
+      "slippageR": 0.05691808877187235
+    },
+    {
+      "entryTime": 1766444700000,
+      "exitTime": 1766448900000,
+      "direction": "long",
+      "entry": 4448.89,
+      "stopLoss": 4442.622696428572,
+      "takeProfits": [
+        4455.157303571428,
+        4461.424607142856,
+        4467.691910714284
+      ],
+      "resultR": 1.9619161193624484,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.02212805547920252,
+      "slippageR": 0.015955825158349094
+    },
+    {
+      "entryTime": 1766531100000,
+      "exitTime": 1766532900000,
+      "direction": "long",
+      "entry": 4488.053,
+      "stopLoss": 4484.2101250000005,
+      "takeProfits": [
+        4491.895874999999,
+        4495.738749999999,
+        4499.581624999998
+      ],
+      "resultR": 1.9383690331605896,
+      "score": 57,
+      "exitReason": "all_targets",
+      "commissionR": 0.0356087829276212,
+      "slippageR": 0.026022183911789086
+    },
+    {
+      "entryTime": 1766538000000,
+      "exitTime": 1766544900000,
+      "direction": "long",
+      "entry": 4511.923,
+      "stopLoss": 4487.753267857142,
+      "takeProfits": [
+        4536.092732142857,
+        4560.2624642857145,
+        4584.432196428572
+      ],
+      "resultR": -1.0095630955711208,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.005425689355406761,
+      "slippageR": 0.00413740621571398
+    },
+    {
+      "entryTime": 1766710200000,
+      "exitTime": 1766738700000,
+      "direction": "long",
+      "entry": 4509.91,
+      "stopLoss": 4478.027035714285,
+      "takeProfits": [
+        4541.792964285714,
+        4573.675928571429,
+        4605.558892857143
+      ],
+      "resultR": -0.005863079315669994,
+      "score": 55,
+      "exitReason": "timeout",
+      "commissionR": 0.002726608092233403,
+      "slippageR": 0.0031364712234365905
+    },
+    {
+      "entryTime": 1766963100000,
+      "exitTime": 1766963100000,
+      "direction": "short",
+      "entry": 4540.723,
+      "stopLoss": 4542.48725,
+      "takeProfits": [
+        4538.95875,
+        4537.1945,
+        4535.430249999999
+      ],
+      "resultR": -1.1357552620972928,
+      "score": 57,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.07907395275905282,
+      "slippageR": 0.05668130933824011
+    },
+    {
+      "entryTime": 1766968500000,
+      "exitTime": 1766971500000,
+      "direction": "long",
+      "entry": 4496.023,
+      "stopLoss": 4481.406392857143,
+      "takeProfits": [
+        4510.639607142857,
+        4525.256214285714,
+        4539.872821428571
+      ],
+      "resultR": 0.3182650182072452,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.008226782134016895,
+      "slippageR": 0.006841532992071223
+    },
+    {
+      "entryTime": 1767048300000,
+      "exitTime": 1767049500000,
+      "direction": "long",
+      "entry": 4331.650000000001,
+      "stopLoss": 4326.9615,
+      "takeProfits": [
+        4336.338500000001,
+        4341.027000000001,
+        4345.715500000001
+      ],
+      "resultR": 1.9512921786440898,
+      "score": 60,
+      "exitReason": "all_targets",
+      "commissionR": 0.027379038162992444,
+      "slippageR": 0.021328783192917918
+    },
+    {
+      "entryTime": 1767134400000,
+      "exitTime": 1767135600000,
+      "direction": "long",
+      "entry": 4338.204000000001,
+      "stopLoss": 4337.239339285714,
+      "takeProfits": [
+        4339.168660714287,
+        4340.133321428574,
+        4341.097982142861
+      ],
+      "resultR": 1.7526297776613786,
+      "score": 64,
+      "exitReason": "all_targets",
+      "commissionR": 0.1437068321756496,
+      "slippageR": 0.10366339016297181
+    },
+    {
+      "entryTime": 1767142500000,
+      "exitTime": 1767142800000,
+      "direction": "long",
+      "entry": 4340.62,
+      "stopLoss": 4336.687688492065,
+      "takeProfits": [
+        4344.552311507935,
+        4348.48462301587,
+        4352.416934523805
+      ],
+      "resultR": -1.0603729733495166,
+      "score": 55,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.03494263808787526,
+      "slippageR": 0.025430335261641453
+    },
+    {
+      "entryTime": 1767221100000,
+      "exitTime": 1767249600000,
+      "direction": "long",
+      "entry": 4318.854,
+      "stopLoss": 4317.625053571429,
+      "takeProfits": [
+        4320.082946428572,
+        4321.311892857143,
+        4322.540839285714
+      ],
+      "resultR": -0.19486383816300262,
+      "score": 63,
+      "exitReason": "timeout",
+      "commissionR": 0.11349332625529564,
+      "slippageR": 0.081370511907707
+    },
+    {
+      "entryTime": 1767394200000,
+      "exitTime": 1767422700000,
+      "direction": "long",
+      "entry": 4331.75,
+      "stopLoss": 4329.901964285714,
+      "takeProfits": [
+        4333.598035714286,
+        4335.446071428572,
+        4337.294107142859
+      ],
+      "resultR": -0.12984751690837787,
+      "score": 59,
+      "exitReason": "timeout",
+      "commissionR": 0.07573600855009652,
+      "slippageR": 0.05411150835828134
+    },
+    {
+      "entryTime": 1768869300000,
+      "exitTime": 1768869600000,
+      "direction": "long",
+      "entry": 4664.87,
+      "stopLoss": 4660.420035714285,
+      "takeProfits": [
+        4669.319964285714,
+        4673.769928571429,
+        4678.219892857143
+      ],
+      "resultR": -1.052244851992388,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.02977276152617345,
+      "slippageR": 0.02247209046621461
+    },
+    {
+      "entryTime": 1768949100000,
+      "exitTime": 1768950000000,
+      "direction": "long",
+      "entry": 4763.12,
+      "stopLoss": 4756.800053571429,
+      "takeProfits": [
+        4769.439946428571,
+        4775.7598928571415,
+        4782.079839285712
+      ],
+      "resultR": -1.0375903597944902,
+      "score": 58,
+      "exitReason": "stop_loss",
+      "commissionR": 0.021767440861518602,
+      "slippageR": 0.01582291893297173
+    },
+    {
+      "entryTime": 1768953900000,
+      "exitTime": 1768957800000,
+      "direction": "long",
+      "entry": 4772.56,
+      "stopLoss": 4761.840535714286,
+      "takeProfits": [
+        4783.279464285715,
+        4793.99892857143,
+        4804.718392857145
+      ],
+      "resultR": 1.9797306964894266,
+      "score": 58,
+      "exitReason": "all_targets",
+      "commissionR": 0.010940479109034638,
+      "slippageR": 0.009328824401538791
+    },
+    {
+      "entryTime": 1769035800000,
+      "exitTime": 1769036400000,
+      "direction": "long",
+      "entry": 4831.860000000001,
+      "stopLoss": 4827.3949464285715,
+      "takeProfits": [
+        4836.32505357143,
+        4840.790107142859,
+        4845.255160714288
+      ],
+      "resultR": -1.0521875704435322,
+      "score": 57,
+      "exitReason": "stop_loss",
+      "commissionR": 0.02979142258096711,
+      "slippageR": 0.022396147862565226
+    },
+    {
+      "entryTime": 1769040600000,
+      "exitTime": 1769041200000,
+      "direction": "long",
+      "entry": 4790.43,
+      "stopLoss": 4781.866964285714,
+      "takeProfits": [
+        4798.993035714287,
+        4807.556071428573,
+        4816.119107142859
+      ],
+      "resultR": -1.0280139100101777,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.016335808535818366,
+      "slippageR": 0.011678101474359454
+    },
+    {
+      "entryTime": 1769071800000,
+      "exitTime": 1769074200000,
+      "direction": "long",
+      "entry": 4827.05,
+      "stopLoss": 4820.190035714286,
+      "takeProfits": [
+        4833.9099642857145,
+        4840.769928571429,
+        4847.629892857143
+      ],
+      "resultR": 0.2995990868186646,
+      "score": 55,
+      "exitReason": "breakeven",
+      "commissionR": 0.019156911147450134,
+      "slippageR": 0.01457733536721858
+    },
+    {
+      "entryTime": 1769123700000,
+      "exitTime": 1769124600000,
+      "direction": "long",
+      "entry": 4942.92,
+      "stopLoss": 4934.922678571429,
+      "takeProfits": [
+        4950.917321428571,
+        4958.914642857142,
+        4966.911964285713
+      ],
+      "resultR": -1.028899835617339,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.016395648947694613,
+      "slippageR": 0.012504186669644505
+    },
+    {
+      "entryTime": 1769382300000,
+      "exitTime": 1769382300000,
+      "direction": "short",
+      "entry": 5012.572999999999,
+      "stopLoss": 5017.415464285715,
+      "takeProfits": [
+        5007.730535714284,
+        5002.888071428569,
+        4998.045607142853
+      ],
+      "resultR": -1.048118030283325,
+      "score": 58,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.027467387532073968,
+      "slippageR": 0.02065064275125121
+    },
+    {
+      "entryTime": 1769403300000,
+      "exitTime": 1769431800000,
+      "direction": "long",
+      "entry": 5065.360000000001,
+      "stopLoss": 5028.1525,
+      "takeProfits": [
+        5102.567500000001,
+        5139.7750000000015,
+        5176.982500000002
+      ],
+      "resultR": 0.3278844940327265,
+      "score": 56,
+      "exitReason": "timeout",
+      "commissionR": 0.002761209118519914,
+      "slippageR": 0.0026876301820869136
+    },
+    {
+      "entryTime": 1769445900000,
+      "exitTime": 1769449200000,
+      "direction": "long",
+      "entry": 5077.06,
+      "stopLoss": 5069.952,
+      "takeProfits": [
+        5084.168000000001,
+        5091.276000000001,
+        5098.384000000001
+      ],
+      "resultR": 1.966634516787497,
+      "score": 55,
+      "exitReason": "all_targets",
+      "commissionR": 0.019296828175924898,
+      "slippageR": 0.014068655036578158
+    },
+    {
+      "entryTime": 1769467500000,
+      "exitTime": 1769468400000,
+      "direction": "long",
+      "entry": 5009.71,
+      "stopLoss": 5006.8423571428575,
+      "takeProfits": [
+        5012.577642857143,
+        5015.445285714285,
+        5018.312928571428
+      ],
+      "resultR": 1.9187207603748386,
+      "score": 62,
+      "exitReason": "all_targets",
+      "commissionR": 0.04640739365908284,
+      "slippageR": 0.03487184596607868
+    },
+    {
+      "entryTime": 1769475000000,
+      "exitTime": 1769476500000,
+      "direction": "long",
+      "entry": 5023.51,
+      "stopLoss": 5007.483714285715,
+      "takeProfits": [
+        5039.536285714285,
+        5055.562571428571,
+        5071.588857142856
+      ],
+      "resultR": 1.9856485315811145,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.008111719435073153,
+      "slippageR": 0.0062397489838125
+    },
+    {
+      "entryTime": 1769523900000,
+      "exitTime": 1769524800000,
+      "direction": "long",
+      "entry": 5060.27,
+      "stopLoss": 5054.572857142857,
+      "takeProfits": [
+        5065.967142857144,
+        5071.664285714287,
+        5077.36142857143
+      ],
+      "resultR": 1.958351413941947,
+      "score": 55,
+      "exitReason": "all_targets",
+      "commissionR": 0.024095928084132745,
+      "slippageR": 0.017552657973920516
+    },
+    {
+      "entryTime": 1769537400000,
+      "exitTime": 1769540700000,
+      "direction": "long",
+      "entry": 5081.66,
+      "stopLoss": 5071.353982142858,
+      "takeProfits": [
+        5091.966017857142,
+        5102.272035714284,
+        5112.578053571427
+      ],
+      "resultR": 0.31037344540389683,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.013256819160668738,
+      "slippageR": 0.009703068768767779
+    },
+    {
+      "entryTime": 1769541300000,
+      "exitTime": 1769544000000,
+      "direction": "long",
+      "entry": 5087.02,
+      "stopLoss": 5080.32606547619,
+      "takeProfits": [
+        5093.713934523811,
+        5100.407869047622,
+        5107.101803571432
+      ],
+      "resultR": 1.9665303132573646,
+      "score": 58,
+      "exitReason": "all_targets",
+      "commissionR": 0.018530789500020357,
+      "slippageR": 0.014938897242614983
+    },
+    {
+      "entryTime": 1769553900000,
+      "exitTime": 1769554800000,
+      "direction": "long",
+      "entry": 5178.85,
+      "stopLoss": 5167.983928571429,
+      "takeProfits": [
+        5189.716071428572,
+        5200.5821428571435,
+        5211.448214285715
+      ],
+      "resultR": -1.0196888762851832,
+      "score": 59,
+      "exitReason": "stop_loss",
+      "commissionR": 0.010485918191510492,
+      "slippageR": 0.009202958093672857
+    },
+    {
+      "entryTime": 1769559000000,
+      "exitTime": 1769562300000,
+      "direction": "long",
+      "entry": 5167.17,
+      "stopLoss": 5156.243982142857,
+      "takeProfits": [
+        5178.096017857143,
+        5189.022035714286,
+        5199.948053571429
+      ],
+      "resultR": 1.9803078806049723,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.010539654031389002,
+      "slippageR": 0.009152465363638727
+    },
+    {
+      "entryTime": 1769563200000,
+      "exitTime": 1769563500000,
+      "direction": "long",
+      "entry": 5183.41,
+      "stopLoss": 5176.517446428572,
+      "takeProfits": [
+        5190.302553571428,
+        5197.195107142856,
+        5204.087660714284
+      ],
+      "resultR": 0.3005613651176946,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.018263557223443427,
+      "slippageR": 0.014508410992195318
+    },
+    {
+      "entryTime": 1769578200000,
+      "exitTime": 1769598000000,
+      "direction": "long",
+      "entry": 5258.64,
+      "stopLoss": 5231.751714285714,
+      "takeProfits": [
+        5285.5282857142865,
+        5312.416571428573,
+        5339.304857142859
+      ],
+      "resultR": 0.3270090770974941,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.0026051645442901204,
+      "slippageR": 0.0037190916915490926
+    },
+    {
+      "entryTime": 1769582100000,
+      "exitTime": 1769598000000,
+      "direction": "long",
+      "entry": 5258.46,
+      "stopLoss": 5231.444339285714,
+      "takeProfits": [
+        5285.475660714286,
+        5312.4913214285725,
+        5339.506982142859
+      ],
+      "resultR": 0.32703086469520976,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.0026009119352323595,
+      "slippageR": 0.0037015567028911745
+    },
+    {
+      "entryTime": 1769586600000,
+      "exitTime": 1769598000000,
+      "direction": "long",
+      "entry": 5288.46,
+      "stopLoss": 5249.814589285714,
+      "takeProfits": [
+        5327.105410714286,
+        5365.750821428573,
+        5404.396232142859
+      ],
+      "resultR": -1.0051842953613122,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.002596665985619351,
+      "slippageR": 0.0025876293756927874
+    },
+    {
+      "entryTime": 1769640600000,
+      "exitTime": 1769669100000,
+      "direction": "long",
+      "entry": 5414.75,
+      "stopLoss": 5281.968392857143,
+      "takeProfits": [
+        5547.531607142857,
+        5680.313214285714,
+        5813.094821428571
+      ],
+      "resultR": 0.3299704344304253,
+      "score": 57,
+      "exitReason": "timeout",
+      "commissionR": 0.0026097825477760135,
+      "slippageR": 0.0007531163551320184
+    },
+    {
+      "entryTime": 1769645700000,
+      "exitTime": 1769674200000,
+      "direction": "long",
+      "entry": 5494.673,
+      "stopLoss": 5405.331678571429,
+      "takeProfits": [
+        5584.014321428571,
+        5673.355642857142,
+        5762.696964285713
+      ],
+      "resultR": 0.32960854655064864,
+      "score": 55,
+      "exitReason": "timeout",
+      "commissionR": 0.002605483884529615,
+      "slippageR": 0.0011193028981550336
+    },
+    {
+      "entryTime": 1769675700000,
+      "exitTime": 1769675700000,
+      "direction": "long",
+      "entry": 5522.8,
+      "stopLoss": 5516.237017857143,
+      "takeProfits": [
+        5529.362982142858,
+        5535.925964285715,
+        5542.4889464285725
+      ],
+      "resultR": -1.0360465517925412,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.020809576005729,
+      "slippageR": 0.015236975786812263
+    },
+    {
+      "entryTime": 1769684700000,
+      "exitTime": 1769685000000,
+      "direction": "long",
+      "entry": 5478.16,
+      "stopLoss": 5470.412946428572,
+      "takeProfits": [
+        5485.907053571428,
+        5493.654107142856,
+        5501.401160714285
+      ],
+      "resultR": 1.9714034148870863,
+      "score": 58,
+      "exitReason": "all_targets",
+      "commissionR": 0.01568845183643727,
+      "slippageR": 0.01290813327647654
+    },
+    {
+      "entryTime": 1769726700000,
+      "exitTime": 1769727600000,
+      "direction": "long",
+      "entry": 5378.99,
+      "stopLoss": 5368.477946428572,
+      "takeProfits": [
+        5389.5020535714275,
+        5400.014107142855,
+        5410.526160714283
+      ],
+      "resultR": 1.9775410109490277,
+      "score": 60,
+      "exitReason": "all_targets",
+      "commissionR": 0.012946099935585313,
+      "slippageR": 0.009512889115387025
+    },
+    {
+      "entryTime": 1769987700000,
+      "exitTime": 1769997000000,
+      "direction": "short",
+      "entry": 4746.023,
+      "stopLoss": 4897.945142857144,
+      "takeProfits": [
+        4594.1008571428565,
+        4442.178714285713,
+        4290.256571428569
+      ],
+      "resultR": 0.3301112322336139,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.002563869204622808,
+      "slippageR": 0.0006582318950966393
+    },
+    {
+      "entryTime": 1770072000000,
+      "exitTime": 1770073200000,
+      "direction": "long",
+      "entry": 4657.42,
+      "stopLoss": 4654.76075595238,
+      "takeProfits": [
+        4660.07924404762,
+        4662.7384880952395,
+        4665.397732142859
+      ],
+      "resultR": 1.9112024407103751,
+      "score": 72,
+      "exitReason": "all_targets",
+      "commissionR": 0.051192887356821384,
+      "slippageR": 0.037604671932803445
+    },
+    {
+      "entryTime": 1770158400000,
+      "exitTime": 1770159900000,
+      "direction": "long",
+      "entry": 4944.84,
+      "stopLoss": 4932.388339285714,
+      "takeProfits": [
+        4957.291660714286,
+        4969.743321428572,
+        4982.194982142858
+      ],
+      "resultR": 0.9818272791441958,
+      "score": 61,
+      "exitReason": "breakeven",
+      "commissionR": 0.010141663610141448,
+      "slippageR": 0.008031057245662727
+    },
+    {
+      "entryTime": 1771454100000,
+      "exitTime": 1771455600000,
+      "direction": "long",
+      "entry": 4975.89,
+      "stopLoss": 4974.926660714285,
+      "takeProfits": [
+        4976.853339285715,
+        4977.81667857143,
+        4978.780017857145
+      ],
+      "resultR": -1.2476182971994498,
+      "score": 57,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.14381271023453596,
+      "slippageR": 0.10380558696491393
+    },
+    {
+      "entryTime": 1771461900000,
+      "exitTime": 1771472700000,
+      "direction": "long",
+      "entry": 4964.78,
+      "stopLoss": 4959.314035714286,
+      "takeProfits": [
+        4970.245964285714,
+        4975.711928571428,
+        4981.177892857142
+      ],
+      "resultR": 1.956316289517667,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.02538867693054785,
+      "slippageR": 0.018295033551785342
+    },
+    {
+      "entryTime": 1771542300000,
+      "exitTime": 1771542600000,
+      "direction": "long",
+      "entry": 5000.073,
+      "stopLoss": 4993.419178571428,
+      "takeProfits": [
+        5006.726821428572,
+        5013.380642857144,
+        5020.034464285716
+      ],
+      "resultR": 0.2981901828245074,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.020114192928059955,
+      "slippageR": 0.015028957580765999
+    },
+    {
+      "entryTime": 1771548600000,
+      "exitTime": 1771549200000,
+      "direction": "long",
+      "entry": 4996.110000000001,
+      "stopLoss": 4992.112494047619,
+      "takeProfits": [
+        5000.107505952382,
+        5004.105011904763,
+        5008.102517857144
+      ],
+      "resultR": 1.9423474989901326,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.03263690348700934,
+      "slippageR": 0.025015597522858132
+    },
+    {
+      "entryTime": 1771801500000,
+      "exitTime": 1771801500000,
+      "direction": "short",
+      "entry": 5116.343,
+      "stopLoss": 5118.869071428571,
+      "takeProfits": [
+        5113.816928571428,
+        5111.290857142857,
+        5108.764785714286
+      ],
+      "resultR": -1.0942876088961646,
+      "score": 58,
+      "exitReason": "stop_loss",
+      "commissionR": 0.054700446447415736,
+      "slippageR": 0.03958716244874901
+    },
+    {
+      "entryTime": 1771886700000,
+      "exitTime": 1771887600000,
+      "direction": "long",
+      "entry": 5226.81,
+      "stopLoss": 5225.951785714286,
+      "takeProfits": [
+        5227.668214285714,
+        5228.526428571428,
+        5229.384642857142
+      ],
+      "resultR": -1.279025101851287,
+      "score": 62,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.16250408645382627,
+      "slippageR": 0.11652101539746082
+    },
+    {
+      "entryTime": 1771891800000,
+      "exitTime": 1771892700000,
+      "direction": "long",
+      "entry": 5227.68,
+      "stopLoss": 5219.0725,
+      "takeProfits": [
+        5236.2875,
+        5244.895,
+        5253.5025000000005
+      ],
+      "resultR": 0.3066186342027963,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.01509692393448717,
+      "slippageR": 0.011617775196049859
+    },
+    {
+      "entryTime": 1771896000000,
+      "exitTime": 1771896000000,
+      "direction": "long",
+      "entry": 5159.83,
+      "stopLoss": 5149.75944047619,
+      "takeProfits": [
+        5169.9005595238095,
+        5179.971119047619,
+        5190.041678571429
+      ],
+      "resultR": -1.0224914468297108,
+      "score": 56,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.012561511977176157,
+      "slippageR": 0.009929934852534475
+    },
+    {
+      "entryTime": 1771926600000,
+      "exitTime": 1771929000000,
+      "direction": "long",
+      "entry": 5169.8730000000005,
+      "stopLoss": 5162.641428571428,
+      "takeProfits": [
+        5177.104571428573,
+        5184.336142857145,
+        5191.567714285718
+      ],
+      "resultR": 0.30182859318464345,
+      "score": 55,
+      "exitReason": "breakeven",
+      "commissionR": 0.01767648705215072,
+      "slippageR": 0.013828253096539197
+    },
+    {
+      "entryTime": 1771973400000,
+      "exitTime": 1771974000000,
+      "direction": "long",
+      "entry": 5141.52,
+      "stopLoss": 5139.294464285715,
+      "takeProfits": [
+        5143.745535714286,
+        5145.971071428572,
+        5148.196607142858
+      ],
+      "resultR": -1.1054467762123332,
+      "score": 60,
+      "exitReason": "stop_loss",
+      "commissionR": 0.06051377452734734,
+      "slippageR": 0.04493300168498589
+    },
+    {
+      "entryTime": 1771977900000,
+      "exitTime": 1771981800000,
+      "direction": "long",
+      "entry": 5140.12,
+      "stopLoss": 5128.8607142857145,
+      "takeProfits": [
+        5151.379285714285,
+        5162.638571428571,
+        5173.897857142856
+      ],
+      "resultR": 1.9809767573706047,
+      "score": 57,
+      "exitReason": "all_targets",
+      "commissionR": 0.010141684550348952,
+      "slippageR": 0.008881558079046118
+    },
+    {
+      "entryTime": 1772060100000,
+      "exitTime": 1772060400000,
+      "direction": "long",
+      "entry": 5165.09,
+      "stopLoss": 5161.492875,
+      "takeProfits": [
+        5168.687125,
+        5172.284250000001,
+        5175.881375000001
+      ],
+      "resultR": -1.065458294971997,
+      "score": 61,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.037658315821983215,
+      "slippageR": 0.02779997915001384
+    },
+    {
+      "entryTime": 1772147100000,
+      "exitTime": 1772147100000,
+      "direction": "long",
+      "entry": 5181.173,
+      "stopLoss": 5179.435839285715,
+      "takeProfits": [
+        5182.910160714285,
+        5184.64732142857,
+        5186.384482142855
+      ],
+      "resultR": -1.1358092124307921,
+      "score": 58,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.07824401470459323,
+      "slippageR": 0.05756519772619894
+    },
+    {
+      "entryTime": 1772151300000,
+      "exitTime": 1772152200000,
+      "direction": "long",
+      "entry": 5185.64,
+      "stopLoss": 5181.9334285714285,
+      "takeProfits": [
+        5189.346571428572,
+        5193.053142857144,
+        5196.759714285716
+      ],
+      "resultR": 0.9374830619391391,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.035537827600677176,
+      "slippageR": 0.026979110460183798
+    },
+    {
+      "entryTime": 1772406300000,
+      "exitTime": 1772406300000,
+      "direction": "short",
+      "entry": 5367.373,
+      "stopLoss": 5344.110035714285,
+      "takeProfits": [
+        5344.110035714285,
+        5320.84707142857,
+        5297.584107142856
+      ],
+      "resultR": -0.009351824628908666,
+      "score": 59,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.005053146318964805,
+      "slippageR": 0.004298678309943862
+    },
+    {
+      "entryTime": 1772413200000,
+      "exitTime": 1772441700000,
+      "direction": "long",
+      "entry": 5347.1900000000005,
+      "stopLoss": 5274.016553571427,
+      "takeProfits": [
+        5420.363446428574,
+        5493.536892857148,
+        5566.710339285722
+      ],
+      "resultR": -0.003893307268939749,
+      "score": 56,
+      "exitReason": "timeout",
+      "commissionR": 0.0025266913053522974,
+      "slippageR": 0.0013666159635874514
+    },
+    {
+      "entryTime": 1772446500000,
+      "exitTime": 1772447100000,
+      "direction": "long",
+      "entry": 5390.39,
+      "stopLoss": 5383.597178571428,
+      "takeProfits": [
+        5397.182821428572,
+        5403.9756428571445,
+        5410.768464285717
+      ],
+      "resultR": -1.034935347289234,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.020213923937903385,
+      "slippageR": 0.014721423351330578
+    },
+    {
+      "entryTime": 1772457000000,
+      "exitTime": 1772457000000,
+      "direction": "long",
+      "entry": 5397.29,
+      "stopLoss": 5383.555232142858,
+      "takeProfits": [
+        5411.024767857142,
+        5424.7595357142845,
+        5438.494303571427
+      ],
+      "resultR": -1.0174403271529604,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.010159534274615674,
+      "slippageR": 0.007280792878344754
+    },
+    {
+      "entryTime": 1772499300000,
+      "exitTime": 1772499900000,
+      "direction": "long",
+      "entry": 5349.81,
+      "stopLoss": 5342.567267857143,
+      "takeProfits": [
+        5357.052732142858,
+        5364.295464285716,
+        5371.538196428573
+      ],
+      "resultR": 1.9683229618493356,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.01787009375073745,
+      "slippageR": 0.01380694439992699
+    },
+    {
+      "entryTime": 1772577600000,
+      "exitTime": 1772578800000,
+      "direction": "long",
+      "entry": 5085.04,
+      "stopLoss": 5082.041428571429,
+      "takeProfits": [
+        5088.038571428571,
+        5091.0371428571425,
+        5094.035714285714
+      ],
+      "resultR": 1.9211469476936833,
+      "score": 58,
+      "exitReason": "all_targets",
+      "commissionR": 0.04550383839492835,
+      "slippageR": 0.03334921391138817
+    },
+    {
+      "entryTime": 1772664300000,
+      "exitTime": 1772665200000,
+      "direction": "long",
+      "entry": 5140.5,
+      "stopLoss": 5137.523357142858,
+      "takeProfits": [
+        5143.476642857142,
+        5146.453285714284,
+        5149.429928571426
+      ],
+      "resultR": 1.921334207131908,
+      "score": 55,
+      "exitReason": "all_targets",
+      "commissionR": 0.04507089929190608,
+      "slippageR": 0.033594893576186134
+    },
+    {
+      "entryTime": 1772669100000,
+      "exitTime": 1772679000000,
+      "direction": "long",
+      "entry": 5165.05,
+      "stopLoss": 5156.913892857143,
+      "takeProfits": [
+        5173.1861071428575,
+        5181.322214285715,
+        5189.458321428572
+      ],
+      "resultR": 1.9728284304380634,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.014880679306418119,
+      "slippageR": 0.012290890255518551
+    },
+    {
+      "entryTime": 1772691300000,
+      "exitTime": 1772693700000,
+      "direction": "long",
+      "entry": 5132.49,
+      "stopLoss": 5121.080964285713,
+      "takeProfits": [
+        5143.899035714287,
+        5155.308071428573,
+        5166.71710714286
+      ],
+      "resultR": 1.9814114653998045,
+      "score": 55,
+      "exitReason": "all_targets",
+      "commissionR": 0.00982355195799235,
+      "slippageR": 0.008764982642203182
+    },
+    {
+      "entryTime": 1772717100000,
+      "exitTime": 1772720100000,
+      "direction": "long",
+      "entry": 5104.5,
+      "stopLoss": 5086.945678571428,
+      "takeProfits": [
+        5122.054321428572,
+        5139.608642857143,
+        5157.162964285715
+      ],
+      "resultR": 0.32034134219979965,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.007295388139968882,
+      "slippageR": 0.005696602993564782
+    },
+    {
+      "entryTime": 1772750700000,
+      "exitTime": 1772751600000,
+      "direction": "long",
+      "entry": 5083.35,
+      "stopLoss": 5080.199160714285,
+      "takeProfits": [
+        5086.500839285715,
+        5089.65167857143,
+        5092.802517857145
+      ],
+      "resultR": -1.0754399061129911,
+      "score": 57,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.043702330523727136,
+      "slippageR": 0.03173757558926387
+    },
+    {
+      "entryTime": 1774223700000,
+      "exitTime": 1774224000000,
+      "direction": "long",
+      "entry": 4458.31,
+      "stopLoss": 4445.333624999999,
+      "takeProfits": [
+        4471.2863750000015,
+        4484.262750000003,
+        4497.239125000004
+      ],
+      "resultR": -1.0174704451281877,
+      "score": 56,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.009764132695016716,
+      "slippageR": 0.00770631243317117
+    },
+    {
+      "entryTime": 1774302000000,
+      "exitTime": 1774303200000,
+      "direction": "long",
+      "entry": 4406.070000000001,
+      "stopLoss": 4401.276303571429,
+      "takeProfits": [
+        4410.863696428572,
+        4415.657392857144,
+        4420.451089285716
+      ],
+      "resultR": -1.047849394321061,
+      "score": 58,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.02698866576011778,
+      "slippageR": 0.020860728560943287
+    },
+    {
+      "entryTime": 1774394100000,
+      "exitTime": 1774395300000,
+      "direction": "long",
+      "entry": 4484.523,
+      "stopLoss": 4469.404660714286,
+      "takeProfits": [
+        4499.641339285714,
+        4514.759678571428,
+        4529.8780178571415
+      ],
+      "resultR": 1.9859862048500627,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.007399312030452359,
+      "slippageR": 0.006614483119484957
+    },
+    {
+      "entryTime": 1774474800000,
+      "exitTime": 1774476900000,
+      "direction": "long",
+      "entry": 4505.5,
+      "stopLoss": 4493.671785714286,
+      "takeProfits": [
+        4517.328214285714,
+        4529.1564285714285,
+        4540.984642857143
+      ],
+      "resultR": 0.9817768920592368,
+      "score": 61,
+      "exitReason": "breakeven",
+      "commissionR": 0.009768746396030504,
+      "slippageR": 0.008454361544732664
+    },
+    {
+      "entryTime": 1774562100000,
+      "exitTime": 1774562400000,
+      "direction": "long",
+      "entry": 4379.55,
+      "stopLoss": 4376.089339285714,
+      "takeProfits": [
+        4383.010660714286,
+        4386.471321428572,
+        4389.931982142858
+      ],
+      "resultR": -1.0677803241343489,
+      "score": 56,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.03888410799065421,
+      "slippageR": 0.028896216143694788
+    },
+    {
+      "entryTime": 1774569300000,
+      "exitTime": 1774570800000,
+      "direction": "long",
+      "entry": 4405.14,
+      "stopLoss": 4387.088714285715,
+      "takeProfits": [
+        4423.191285714286,
+        4441.242571428572,
+        4459.293857142858
+      ],
+      "resultR": -1.0128696754871038,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.007329903883973176,
+      "slippageR": 0.0055397716031307465
+    },
+    {
+      "entryTime": 1774821900000,
+      "exitTime": 1774821900000,
+      "direction": "short",
+      "entry": 4511.34,
+      "stopLoss": 4516.784321428571,
+      "takeProfits": [
+        4505.895678571429,
+        4500.451357142858,
+        4495.007035714287
+      ],
+      "resultR": 1.9570748579716823,
+      "score": 60,
+      "exitReason": "all_targets",
+      "commissionR": 0.024557380074511675,
+      "slippageR": 0.01836776195380609
+    },
+    {
+      "entryTime": 1774906800000,
+      "exitTime": 1774908300000,
+      "direction": "long",
+      "entry": 4511.06,
+      "stopLoss": 4500.4941607142855,
+      "takeProfits": [
+        4521.625839285715,
+        4532.19167857143,
+        4542.757517857145
+      ],
+      "resultR": 0.311709167064396,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.01215970279416153,
+      "slippageR": 0.009464463474775808
+    },
+    {
+      "entryTime": 1774912200000,
+      "exitTime": 1774912500000,
+      "direction": "long",
+      "entry": 4494.47,
+      "stopLoss": 4490.760892857143,
+      "takeProfits": [
+        4498.179107142858,
+        4501.888214285716,
+        4505.597321428573
+      ],
+      "resultR": 1.936616991194113,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.036422342492280574,
+      "slippageR": 0.02696066631360666
+    },
+    {
+      "entryTime": 1774976400000,
+      "exitTime": 1775004900000,
+      "direction": "long",
+      "entry": 4638.18,
+      "stopLoss": 4604.148875,
+      "takeProfits": [
+        4672.211125000001,
+        4706.242250000001,
+        4740.273375000002
+      ],
+      "resultR": 0.994656643931497,
+      "score": 55,
+      "exitReason": "timeout",
+      "commissionR": 0.002404869609416031,
+      "slippageR": 0.002938486459087049
+    },
+    {
+      "entryTime": 1774993500000,
+      "exitTime": 1774994400000,
+      "direction": "long",
+      "entry": 4668.29,
+      "stopLoss": 4663.984642857143,
+      "takeProfits": [
+        4672.595357142857,
+        4676.9007142857145,
+        4681.206071428572
+      ],
+      "resultR": 1.9456645301069369,
+      "score": 58,
+      "exitReason": "all_targets",
+      "commissionR": 0.031108593078464128,
+      "slippageR": 0.02322687681459919
+    },
+    {
+      "entryTime": 1775001300000,
+      "exitTime": 1775005500000,
+      "direction": "long",
+      "entry": 4691.45,
+      "stopLoss": 4665.977267857143,
+      "takeProfits": [
+        4716.922732142857,
+        4742.395464285714,
+        4767.8681964285715
+      ],
+      "resultR": 0.32466773994287773,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.004739826831957841,
+      "slippageR": 0.003925766558497763
+    },
+    {
+      "entryTime": 1775079600000,
+      "exitTime": 1775081100000,
+      "direction": "long",
+      "entry": 4757.74,
+      "stopLoss": 4753.475714285715,
+      "takeProfits": [
+        4762.004285714284,
+        4766.268571428569,
+        4770.532857142854
+      ],
+      "resultR": -1.0542095284911104,
+      "score": 64,
+      "exitReason": "stop_loss",
+      "commissionR": 0.030758942226447494,
+      "slippageR": 0.023450586264662763
+    },
+    {
+      "entryTime": 1775087100000,
+      "exitTime": 1775091600000,
+      "direction": "long",
+      "entry": 4789.33,
+      "stopLoss": 4772.231196428571,
+      "takeProfits": [
+        4806.428803571429,
+        4823.527607142858,
+        4840.626410714287
+      ],
+      "resultR": -1.0129841931469836,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.007135830740675095,
+      "slippageR": 0.00584836240630856
+    },
+    {
+      "entryTime": 1776636300000,
+      "exitTime": 1776664800000,
+      "direction": "short",
+      "entry": 4773.599999999999,
+      "stopLoss": 4830.383392857144,
+      "takeProfits": [
+        4716.816607142855,
+        4660.0332142857105,
+        4603.249821428566
+      ],
+      "resultR": -0.004151797333005291,
+      "score": 57,
+      "exitReason": "timeout",
+      "commissionR": 0.0023907190499308758,
+      "slippageR": 0.0017610782830744156
+    },
+    {
+      "entryTime": 1776721500000,
+      "exitTime": 1776728700000,
+      "direction": "long",
+      "entry": 4820.4400000000005,
+      "stopLoss": 4809.825000000001,
+      "takeProfits": [
+        4831.055,
+        4841.67,
+        4852.285
+      ],
+      "resultR": 0.3119588587517138,
+      "score": 58,
+      "exitReason": "breakeven",
+      "commissionR": 0.011953843399330102,
+      "slippageR": 0.009420631182289408
+    },
+    {
+      "entryTime": 1776808200000,
+      "exitTime": 1776836700000,
+      "direction": "long",
+      "entry": 4720.22,
+      "stopLoss": 4696.312732142857,
+      "takeProfits": [
+        4744.127267857143,
+        4768.034535714286,
+        4791.941803571429
+      ],
+      "resultR": 0.9910430807962614,
+      "score": 57,
+      "exitReason": "timeout",
+      "commissionR": 0.004774090760206386,
+      "slippageR": 0.004182828443532188
+    },
+    {
+      "entryTime": 1776813300000,
+      "exitTime": 1776816000000,
+      "direction": "long",
+      "entry": 4727.35,
+      "stopLoss": 4722.375910714285,
+      "takeProfits": [
+        4732.324089285716,
+        4737.298178571431,
+        4742.272267857146
+      ],
+      "resultR": 1.9537677880844595,
+      "score": 55,
+      "exitReason": "all_targets",
+      "commissionR": 0.026128029168523578,
+      "slippageR": 0.020104182747017037
+    },
+    {
+      "entryTime": 1776899700000,
+      "exitTime": 1776900300000,
+      "direction": "long",
+      "entry": 4725.83,
+      "stopLoss": 4722.8624285714295,
+      "takeProfits": [
+        4728.79757142857,
+        4731.765142857141,
+        4734.732714285711
+      ],
+      "resultR": 0.2525898215884778,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.047045923529371925,
+      "slippageR": 0.03369758821548359
+    },
+    {
+      "entryTime": 1776922500000,
+      "exitTime": 1776928800000,
+      "direction": "long",
+      "entry": 4706.12,
+      "stopLoss": 4699.450714285715,
+      "takeProfits": [
+        4712.789285714285,
+        4719.45857142857,
+        4726.127857142856
+      ],
+      "resultR": 0.9662112577959132,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.01879463274708673,
+      "slippageR": 0.014994109457000077
+    },
+    {
+      "entryTime": 1776929400000,
+      "exitTime": 1776933300000,
+      "direction": "long",
+      "entry": 4705.96,
+      "stopLoss": 4699.087392857143,
+      "takeProfits": [
+        4712.832607142857,
+        4719.705214285715,
+        4726.577821428572
+      ],
+      "resultR": 0.9667452097587983,
+      "score": 55,
+      "exitReason": "breakeven",
+      "commissionR": 0.018704271359305576,
+      "slippageR": 0.014550518881896214
+    },
+    {
+      "entryTime": 1776963900000,
+      "exitTime": 1776963900000,
+      "direction": "long",
+      "entry": 4725.56,
+      "stopLoss": 4722.177607142858,
+      "takeProfits": [
+        4728.942392857143,
+        4732.324785714286,
+        4735.707178571429
+      ],
+      "resultR": -1.0691202452725266,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.03955537678339659,
+      "slippageR": 0.029564868489130095
+    },
+    {
+      "entryTime": 1776981000000,
+      "exitTime": 1776981600000,
+      "direction": "long",
+      "entry": 4692.53,
+      "stopLoss": 4691.883,
+      "takeProfits": [
+        4693.177,
+        4693.824,
+        4694.471
+      ],
+      "resultR": 1.6302256498481522,
+      "score": 61,
+      "exitReason": "all_targets",
+      "commissionR": 0.2152148447422495,
+      "slippageR": 0.15455950540959834
+    },
+    {
+      "entryTime": 1776986100000,
+      "exitTime": 1776990300000,
+      "direction": "long",
+      "entry": 4689.66,
+      "stopLoss": 4685.554410714286,
+      "takeProfits": [
+        4693.765589285714,
+        4697.871178571428,
+        4701.976767857142
+      ],
+      "resultR": 1.9431576673203854,
+      "score": 58,
+      "exitReason": "all_targets",
+      "commissionR": 0.0324852932777516,
+      "slippageR": 0.024357039401862967
+    },
+    {
+      "entryTime": 1776992700000,
+      "exitTime": 1776993900000,
+      "direction": "long",
+      "entry": 4698.75,
+      "stopLoss": 4693.147321428572,
+      "takeProfits": [
+        4704.352678571428,
+        4709.955357142857,
+        4715.558035714285
+      ],
+      "resultR": 0.9591708872531539,
+      "score": 55,
+      "exitReason": "breakeven",
+      "commissionR": 0.022980507169156426,
+      "slippageR": 0.017848605577689657
+    },
+    {
+      "entryTime": 1776997500000,
+      "exitTime": 1777004400000,
+      "direction": "long",
+      "entry": 4685.08,
+      "stopLoss": 4662.509392857143,
+      "takeProfits": [
+        4707.650607142857,
+        4730.221214285713,
+        4752.79182142857
+      ],
+      "resultR": -1.0090047053920448,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.004574164407166964,
+      "slippageR": 0.004430540984877699
+    },
+    {
+      "entryTime": 1777057500000,
+      "exitTime": 1777058400000,
+      "direction": "long",
+      "entry": 4723.570000000001,
+      "stopLoss": 4718.108089285714,
+      "takeProfits": [
+        4729.031910714287,
+        4734.493821428573,
+        4739.955732142859
+      ],
+      "resultR": -1.0435940812897535,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.025285470030612992,
+      "slippageR": 0.018308611259140403
+    },
+    {
+      "entryTime": 1777241100000,
+      "exitTime": 1777251300000,
+      "direction": "short",
+      "entry": 4696.679999999999,
+      "stopLoss": 4708.145892857144,
+      "takeProfits": [
+        4685.214107142855,
+        4673.748214285711,
+        4662.282321428566
+      ],
+      "resultR": 0.9797247989693235,
+      "score": 61,
+      "exitReason": "breakeven",
+      "commissionR": 0.011553682240476773,
+      "slippageR": 0.008721518790199613
+    },
+    {
+      "entryTime": 1777326600000,
+      "exitTime": 1777327200000,
+      "direction": "long",
+      "entry": 4680.74,
+      "stopLoss": 4679.802321428571,
+      "takeProfits": [
+        4681.677678571428,
+        4682.615357142857,
+        4683.553035714285
+      ],
+      "resultR": 1.746187426226225,
+      "score": 62,
+      "exitReason": "all_targets",
+      "commissionR": 0.1471662206981598,
+      "slippageR": 0.10664635307561529
+    },
+    {
+      "entryTime": 1777332000000,
+      "exitTime": 1777334700000,
+      "direction": "long",
+      "entry": 4690.97,
+      "stopLoss": 4688.345535714286,
+      "takeProfits": [
+        4693.594464285715,
+        4696.218928571429,
+        4698.843392857144
+      ],
+      "resultR": 1.9094668890939535,
+      "score": 57,
+      "exitReason": "all_targets",
+      "commissionR": 0.05243009668546129,
+      "slippageR": 0.038103014220585166
+    },
+    {
+      "entryTime": 1777364100000,
+      "exitTime": 1777368000000,
+      "direction": "long",
+      "entry": 4620.25,
+      "stopLoss": 4609.486428571429,
+      "takeProfits": [
+        4631.013571428571,
+        4641.777142857141,
+        4652.540714285712
+      ],
+      "resultR": 0.31275267959033126,
+      "score": 55,
+      "exitReason": "breakeven",
+      "commissionR": 0.011290057153977571,
+      "slippageR": 0.009290596589024466
+    },
+    {
+      "entryTime": 1777412400000,
+      "exitTime": 1777413900000,
+      "direction": "long",
+      "entry": 4594.610000000001,
+      "stopLoss": 4592.773928571429,
+      "takeProfits": [
+        4596.446071428572,
+        4598.282142857144,
+        4600.118214285716
+      ],
+      "resultR": 0.8711378516693306,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.07439803629022183,
+      "slippageR": 0.05446411204044765
+    },
+    {
+      "entryTime": 1777418100000,
+      "exitTime": 1777420800000,
+      "direction": "long",
+      "entry": 4590.6900000000005,
+      "stopLoss": 4586.501107142857,
+      "takeProfits": [
+        4594.878892857144,
+        4599.067785714287,
+        4603.256678571431
+      ],
+      "resultR": 1.9447014218452103,
+      "score": 57,
+      "exitReason": "all_targets",
+      "commissionR": 0.03142592172494857,
+      "slippageR": 0.023872656429841134
+    },
+    {
+      "entryTime": 1777499100000,
+      "exitTime": 1777500000000,
+      "direction": "long",
+      "entry": 4543.6,
+      "stopLoss": 4542.268,
+      "takeProfits": [
+        4544.932000000001,
+        4546.264000000001,
+        4547.596000000001
+      ],
+      "resultR": -1.1795604197315208,
+      "score": 60,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.10448534465646456,
+      "slippageR": 0.07507507507505622
+    },
+    {
+      "entryTime": 1777504800000,
+      "exitTime": 1777512300000,
+      "direction": "long",
+      "entry": 4551.4800000000005,
+      "stopLoss": 4542.693892857143,
+      "takeProfits": [
+        4560.266107142858,
+        4569.052214285716,
+        4577.838321428574
+      ],
+      "resultR": 1.9729644240123134,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.015653971100101225,
+      "slippageR": 0.011381604887585384
+    },
+    {
+      "entryTime": 1777585800000,
+      "exitTime": 1777586400000,
+      "direction": "long",
+      "entry": 4622.21,
+      "stopLoss": 4618.825000000001,
+      "takeProfits": [
+        4625.594999999999,
+        4628.979999999999,
+        4632.364999999998
+      ],
+      "resultR": 1.9305980443781667,
+      "score": 61,
+      "exitReason": "all_targets",
+      "commissionR": 0.03985985813290543,
+      "slippageR": 0.02954209748892775
+    },
+    {
+      "entryTime": 1777845900000,
+      "exitTime": 1777846500000,
+      "direction": "short",
+      "entry": 4625.139999999999,
+      "stopLoss": 4627.789678571428,
+      "takeProfits": [
+        4622.4903214285705,
+        4619.840642857142,
+        4617.190964285713
+      ],
+      "resultR": 1.9096212133268338,
+      "score": 59,
+      "exitReason": "all_targets",
+      "commissionR": 0.052638359936774515,
+      "slippageR": 0.03774042673639161
+    },
+    {
+      "entryTime": 1777872000000,
+      "exitTime": 1777872000000,
+      "direction": "long",
+      "entry": 4611,
+      "stopLoss": 4605.863678571429,
+      "takeProfits": [
+        4616.136321428571,
+        4621.272642857142,
+        4626.408964285713
+      ],
+      "resultR": -1.0455394449118944,
+      "score": 57,
+      "exitReason": "stop_loss",
+      "commissionR": 0.026070258376226486,
+      "slippageR": 0.019469186535667964
+    },
+    {
+      "entryTime": 1777875900000,
+      "exitTime": 1777881000000,
+      "direction": "long",
+      "entry": 4592.570000000001,
+      "stopLoss": 4581.748178571429,
+      "takeProfits": [
+        4603.391821428572,
+        4614.213642857144,
+        4625.0354642857155
+      ],
+      "resultR": -1.0201602811284471,
+      "score": 62,
+      "exitReason": "stop_loss",
+      "commissionR": 0.010919692502951762,
+      "slippageR": 0.009240588625495266
+    },
+    {
+      "entryTime": 1777889100000,
+      "exitTime": 1777889100000,
+      "direction": "long",
+      "entry": 4560.31,
+      "stopLoss": 4552.835,
+      "takeProfits": [
+        4567.785000000001,
+        4575.260000000001,
+        4582.7350000000015
+      ],
+      "resultR": -1.030939010026062,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.01756108360465806,
+      "slippageR": 0.013377926421404032
+    },
+    {
+      "entryTime": 1779226800000,
+      "exitTime": 1779228000000,
+      "direction": "long",
+      "entry": 4482,
+      "stopLoss": 4481.206196428571,
+      "takeProfits": [
+        4482.793803571429,
+        4483.587607142857,
+        4484.381410714286
+      ],
+      "resultR": -1.300289987000507,
+      "score": 62,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.17431423733234264,
+      "slippageR": 0.12597574966816447
+    },
+    {
+      "entryTime": 1779313800000,
+      "exitTime": 1779314700000,
+      "direction": "long",
+      "entry": 4543.88,
+      "stopLoss": 4541.535892857143,
+      "takeProfits": [
+        4546.224107142857,
+        4548.568214285714,
+        4550.912321428571
+      ],
+      "resultR": 0.2329285005373241,
+      "score": 58,
+      "exitReason": "breakeven",
+      "commissionR": 0.05774466672607358,
+      "slippageR": 0.042660166069935605
+    },
+    {
+      "entryTime": 1779319200000,
+      "exitTime": 1779322800000,
+      "direction": "long",
+      "entry": 4538.9400000000005,
+      "stopLoss": 4534.081714285715,
+      "takeProfits": [
+        4543.798285714286,
+        4548.656571428572,
+        4553.514857142857
+      ],
+      "resultR": 0.9527962264418048,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.026620381415169352,
+      "slippageR": 0.020583392143025837
+    },
+    {
+      "entryTime": 1779400200000,
+      "exitTime": 1779401100000,
+      "direction": "long",
+      "entry": 4542.29,
+      "stopLoss": 4539.52219642857,
+      "takeProfits": [
+        4545.05780357143,
+        4547.82560714286,
+        4550.593410714289
+      ],
+      "resultR": 0.24863096830514528,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.04857263348501284,
+      "slippageR": 0.03612973154317519
+    },
+    {
+      "entryTime": 1779405300000,
+      "exitTime": 1779405300000,
+      "direction": "long",
+      "entry": 4543.7,
+      "stopLoss": 4541.583089285715,
+      "takeProfits": [
+        4545.816910714285,
+        4547.93382142857,
+        4550.050732142855
+      ],
+      "resultR": -1.1111867129370003,
+      "score": 57,
+      "exitReason": "stop_loss",
+      "commissionR": 0.06394806497457393,
+      "slippageR": 0.047238647962426564
+    },
+    {
+      "entryTime": 1779660300000,
+      "exitTime": 1779660300000,
+      "direction": "short",
+      "entry": 4549.873,
+      "stopLoss": 4554.5822499999995,
+      "takeProfits": [
+        4545.16375,
+        4540.4545,
+        4535.74525
+      ],
+      "resultR": -1.050061336095713,
+      "score": 59,
+      "exitReason": "stop_loss",
+      "commissionR": 0.028826532252212902,
+      "slippageR": 0.021234803843500023
+    },
+    {
+      "entryTime": 1779736800000,
+      "exitTime": 1779748500000,
+      "direction": "long",
+      "entry": 4569.85,
+      "stopLoss": 4567.654071428572,
+      "takeProfits": [
+        4572.045928571429,
+        4574.241857142857,
+        4576.437785714285
+      ],
+      "resultR": 0.8920455614046336,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.06241561674973821,
+      "slippageR": 0.045538821845628207
+    },
+    {
+      "entryTime": 1779831900000,
+      "exitTime": 1779832800000,
+      "direction": "long",
+      "entry": 4505.24,
+      "stopLoss": 4503.383392857143,
+      "takeProfits": [
+        4507.096607142857,
+        4508.953214285713,
+        4510.80982142857
+      ],
+      "resultR": -1.1270963103839013,
+      "score": 64,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.07323461951152369,
+      "slippageR": 0.053861690872377736
+    },
+    {
+      "entryTime": 1779918000000,
+      "exitTime": 1779919200000,
+      "direction": "long",
+      "entry": 4452.05,
+      "stopLoss": 4451.199107142857,
+      "takeProfits": [
+        4452.900892857143,
+        4453.751785714286,
+        4454.602678571428
+      ],
+      "resultR": 1.719554391142277,
+      "score": 56,
+      "exitReason": "all_targets",
+      "commissionR": 0.16292199920398343,
+      "slippageR": 0.11752360965373944
+    },
+    {
+      "entryTime": 1780004700000,
+      "exitTime": 1780005600000,
+      "direction": "long",
+      "entry": 4495.78,
+      "stopLoss": 4494.429660714286,
+      "takeProfits": [
+        4497.1303392857135,
+        4498.480678571427,
+        4499.831017857141
+      ],
+      "resultR": -1.1758434895853354,
+      "score": 55,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.10178802733375497,
+      "slippageR": 0.07405546225158025
+    },
+    {
+      "entryTime": 1780010400000,
+      "exitTime": 1780010400000,
+      "direction": "long",
+      "entry": 4495.683,
+      "stopLoss": 4493.975517857143,
+      "takeProfits": [
+        4497.390482142857,
+        4499.097964285714,
+        4500.805446428571
+      ],
+      "resultR": -1.138697070887235,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.08013130466921417,
+      "slippageR": 0.05856576621802073
+    },
+    {
+      "entryTime": 1780265100000,
+      "exitTime": 1780267500000,
+      "direction": "short",
+      "entry": 4520.33,
+      "stopLoss": 4537.854124999998,
+      "takeProfits": [
+        4502.805875000002,
+        4485.281750000004,
+        4467.757625000006
+      ],
+      "resultR": -1.0124222642973137,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.006715845289231413,
+      "slippageR": 0.005706419008082337
+    },
+    {
+      "entryTime": 1780271700000,
+      "exitTime": 1780273800000,
+      "direction": "long",
+      "entry": 4544.17,
+      "stopLoss": 4536.538482142856,
+      "takeProfits": [
+        4551.801517857144,
+        4559.433035714288,
+        4567.064553571432
+      ],
+      "resultR": -1.031103592141188,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.018000038972352913,
+      "slippageR": 0.013103553168834998
+    },
+    {
+      "entryTime": 1780350600000,
+      "exitTime": 1780353000000,
+      "direction": "long",
+      "entry": 4484.6900000000005,
+      "stopLoss": 4480.877625,
+      "takeProfits": [
+        4488.502375000001,
+        4492.314750000001,
+        4496.127125000002
+      ],
+      "resultR": -1.0624170070198244,
+      "score": 60,
+      "exitReason": "stop_loss",
+      "commissionR": 0.03618663881103369,
+      "slippageR": 0.02623036820879078
+    },
+    {
+      "entryTime": 1780358100000,
+      "exitTime": 1780358700000,
+      "direction": "long",
+      "entry": 4484.71,
+      "stopLoss": 4480.281910714286,
+      "takeProfits": [
+        4489.138089285714,
+        4493.566178571428,
+        4497.994267857142
+      ],
+      "resultR": -1.0521417659665444,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.029558662160887275,
+      "slippageR": 0.022583103805657093
+    },
+    {
+      "entryTime": 1780392900000,
+      "exitTime": 1780404600000,
+      "direction": "long",
+      "entry": 4525.74,
+      "stopLoss": 4515.070571428572,
+      "takeProfits": [
+        4536.409428571427,
+        4547.078857142855,
+        4557.748285714282
+      ],
+      "resultR": -1.0208014131883278,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.011428840015309156,
+      "slippageR": 0.009372573173018654
+    },
+    {
+      "entryTime": 1780436700000,
+      "exitTime": 1780437900000,
+      "direction": "long",
+      "entry": 4489.04,
+      "stopLoss": 4486.277857142857,
+      "takeProfits": [
+        4491.802142857143,
+        4494.564285714286,
+        4497.326428571429
+      ],
+      "resultR": 0.24658468031758063,
+      "score": 60,
+      "exitReason": "breakeven",
+      "commissionR": 0.05054487747916109,
+      "slippageR": 0.036203775536591605
+    },
+    {
+      "entryTime": 1780441800000,
+      "exitTime": 1780441800000,
+      "direction": "long",
+      "entry": 4481.983,
+      "stopLoss": 4477.958017857143,
+      "takeProfits": [
+        4486.007982142857,
+        4490.032964285714,
+        4494.057946428571
+      ],
+      "resultR": -1.0592648099875552,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.03441997926514621,
+      "slippageR": 0.024844830722408884
+    },
+    {
+      "entryTime": 1780523400000,
+      "exitTime": 1780524000000,
+      "direction": "long",
+      "entry": 4434.650000000001,
+      "stopLoss": 4433.345303571428,
+      "takeProfits": [
+        4435.954696428573,
+        4437.259392857145,
+        4438.564089285717
+      ],
+      "resultR": -1.1827628132074237,
+      "score": 63,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.10611663114541554,
+      "slippageR": 0.07664618206200823
+    },
+    {
+      "entryTime": 1780529100000,
+      "exitTime": 1780530000000,
+      "direction": "long",
+      "entry": 4449.320000000001,
+      "stopLoss": 4446.725428571428,
+      "takeProfits": [
+        4451.914571428573,
+        4454.509142857146,
+        4457.1037142857185
+      ],
+      "resultR": 0.2414173632979453,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.05337395924364292,
+      "slippageR": 0.038542010791745095
+    },
+    {
+      "entryTime": 1780610700000,
+      "exitTime": 1780611000000,
+      "direction": "long",
+      "entry": 4473.74,
+      "stopLoss": 4472.515589285714,
+      "takeProfits": [
+        4474.964410714286,
+        4476.188821428572,
+        4477.413232142858
+      ],
+      "resultR": 0.13808874480744637,
+      "score": 64,
+      "exitReason": "breakeven",
+      "commissionR": 0.11357264721303108,
+      "slippageR": 0.08167194131285586
+    },
+    {
+      "entryTime": 1780614900000,
+      "exitTime": 1780615800000,
+      "direction": "long",
+      "entry": 4471.05,
+      "stopLoss": 4465.5225,
+      "takeProfits": [
+        4476.5775,
+        4482.1050000000005,
+        4487.632500000001
+      ],
+      "resultR": -1.0412534605169204,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.023162099141977425,
+      "slippageR": 0.01809136137494299
+    },
+    {
+      "entryTime": 1780869900000,
+      "exitTime": 1780870200000,
+      "direction": "short",
+      "entry": 4320.34,
+      "stopLoss": 4327.146250000001,
+      "takeProfits": [
+        4313.53375,
+        4306.727499999999,
+        4299.9212499999985
+      ],
+      "resultR": 0.30001430034791504,
+      "score": 60,
+      "exitReason": "breakeven",
+      "commissionR": 0.018626654656677538,
+      "slippageR": 0.014692378328740789
+    },
+    {
+      "entryTime": 1780954800000,
+      "exitTime": 1780956300000,
+      "direction": "long",
+      "entry": 4326.35,
+      "stopLoss": 4322.808660714286,
+      "takeProfits": [
+        4329.891339285715,
+        4333.432678571429,
+        4336.974017857144
+      ],
+      "resultR": 0.265573074201894,
+      "score": 66,
+      "exitReason": "breakeven",
+      "commissionR": 0.03952235478734164,
+      "slippageR": 0.028237904344097668
+    },
+    {
+      "entryTime": 1780958700000,
+      "exitTime": 1780958700000,
+      "direction": "long",
+      "entry": 4327.41,
+      "stopLoss": 4325.946928571429,
+      "takeProfits": [
+        4328.87307142857,
+        4330.336142857141,
+        4331.799214285711
+      ],
+      "resultR": -1.1635415808060496,
+      "score": 58,
+      "exitReason": "stop_loss",
+      "commissionR": 0.09519221791970582,
+      "slippageR": 0.06834936288634393
+    },
+    {
+      "entryTime": 1781041800000,
+      "exitTime": 1781042400000,
+      "direction": "long",
+      "entry": 4260.81,
+      "stopLoss": 4255.558678571428,
+      "takeProfits": [
+        4266.061321428573,
+        4271.312642857146,
+        4276.563964285719
+      ],
+      "resultR": -1.0447316515786742,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.025688825623307238,
+      "slippageR": 0.01904282595536703
+    },
+    {
+      "entryTime": 1781046600000,
+      "exitTime": 1781046900000,
+      "direction": "long",
+      "entry": 4241.433,
+      "stopLoss": 4234.642982142857,
+      "takeProfits": [
+        4248.223017857143,
+        4255.013035714285,
+        4261.803053571428
+      ],
+      "resultR": -1.0335083889766667,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.018780887208051076,
+      "slippageR": 0.014727501768615663
+    },
+    {
+      "entryTime": 1781129100000,
+      "exitTime": 1781129100000,
+      "direction": "long",
+      "entry": 4063.26,
+      "stopLoss": 4061.3942857142856,
+      "takeProfits": [
+        4065.125714285715,
+        4066.9914285714294,
+        4068.857142857144
+      ],
+      "resultR": -1.1267527389943028,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.07315396410916652,
+      "slippageR": 0.053598774885136376
+    },
+    {
+      "entryTime": 1781133300000,
+      "exitTime": 1781139600000,
+      "direction": "long",
+      "entry": 4029.75,
+      "stopLoss": 4012.5385357142854,
+      "takeProfits": [
+        4046.9614642857146,
+        4064.172928571429,
+        4081.3843928571437
+      ],
+      "resultR": 1.9870703934882044,
+      "score": 58,
+      "exitReason": "all_targets",
+      "commissionR": 0.007119525606419108,
+      "slippageR": 0.005810080905376516
+    },
+    {
+      "entryTime": 1781214300000,
+      "exitTime": 1781215200000,
+      "direction": "long",
+      "entry": 4212.18,
+      "stopLoss": 4208.588392857143,
+      "takeProfits": [
+        4215.771607142858,
+        4219.363214285715,
+        4222.954821428572
+      ],
+      "resultR": -1.0654399500193232,
+      "score": 57,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.03759726121109124,
+      "slippageR": 0.02784268880823183
+    },
+    {
+      "entryTime": 1781219100000,
+      "exitTime": 1781223300000,
+      "direction": "long",
+      "entry": 4226.773,
+      "stopLoss": 4209.858160714285,
+      "takeProfits": [
+        4243.687839285715,
+        4260.60267857143,
+        4277.517517857145
+      ],
+      "resultR": -1.0129992103039254,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.007087241628914031,
+      "slippageR": 0.005911968675011421
+    },
+    {
+      "entryTime": 1781820300000,
+      "exitTime": 1781821200000,
+      "direction": "long",
+      "entry": 4204.77,
+      "stopLoss": 4200.91905357143,
+      "takeProfits": [
+        4208.620946428571,
+        4212.471892857142,
+        4216.322839285713
+      ],
+      "resultR": 0.27174908475676324,
+      "score": 59,
+      "exitReason": "breakeven",
+      "commissionR": 0.035616606113905616,
+      "slippageR": 0.025967642462664493
+    },
+    {
+      "entryTime": 1781824500000,
+      "exitTime": 1781826300000,
+      "direction": "long",
+      "entry": 4196.110000000001,
+      "stopLoss": 4189.7742499999995,
+      "takeProfits": [
+        4202.445750000002,
+        4208.781500000003,
+        4215.117250000004
+      ],
+      "resultR": -1.037124417779033,
+      "score": 57,
+      "exitReason": "stop_loss",
+      "commissionR": 0.02134096672746331,
+      "slippageR": 0.01578345105156969
+    },
+    {
+      "entryTime": 1782086700000,
+      "exitTime": 1782087000000,
+      "direction": "short",
+      "entry": 4146.63,
+      "stopLoss": 4154.595357142858,
+      "takeProfits": [
+        4138.664642857142,
+        4130.699285714284,
+        4122.733928571426
+      ],
+      "resultR": -1.0292394169350345,
+      "score": 55,
+      "exitReason": "stop_loss",
+      "commissionR": 0.016685052051387952,
+      "slippageR": 0.012554364883646573
+    },
+    {
+      "entryTime": 1782164400000,
+      "exitTime": 1782167700000,
+      "direction": "long",
+      "entry": 4191.34,
+      "stopLoss": 4188.605178571429,
+      "takeProfits": [
+        4194.074821428571,
+        4196.8096428571425,
+        4199.544464285714
+      ],
+      "resultR": 0.24645379229470005,
+      "score": 57,
+      "exitReason": "breakeven",
+      "commissionR": 0.05031408233800982,
+      "slippageR": 0.036565458700623436
+    },
+    {
+      "entryTime": 1782168300000,
+      "exitTime": 1782168300000,
+      "direction": "long",
+      "entry": 4189.9400000000005,
+      "stopLoss": 4188.253321428571,
+      "takeProfits": [
+        4191.62667857143,
+        4193.313357142859,
+        4195.000035714288
+      ],
+      "resultR": -1.140648756110628,
+      "score": 56,
+      "exitReason": "stop_loss",
+      "commissionR": 0.08136063702622753,
+      "slippageR": 0.05928811908440053
+    },
+    {
+      "entryTime": 1782172500000,
+      "exitTime": 1782172800000,
+      "direction": "long",
+      "entry": 4187.42,
+      "stopLoss": 4185.810946428571,
+      "takeProfits": [
+        4189.029053571429,
+        4190.638107142859,
+        4192.247160714288
+      ],
+      "resultR": 0.18454430874909822,
+      "score": 55,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.08664068982669668,
+      "slippageR": 0.06214833475753843
+    },
+    {
+      "entryTime": 1782251100000,
+      "exitTime": 1782252000000,
+      "direction": "long",
+      "entry": 4111.21,
+      "stopLoss": 4110.6480357142855,
+      "takeProfits": [
+        4111.771964285715,
+        4112.333928571429,
+        4112.895892857144
+      ],
+      "resultR": -1.4256073703605596,
+      "score": 57,
+      "exitReason": "ambiguous_stop_first",
+      "commissionR": 0.24766011901015603,
+      "slippageR": 0.17794725135040368
+    },
+    {
+      "entryTime": 1782258900000,
+      "exitTime": 1782260400000,
+      "direction": "long",
+      "entry": 4095.84,
+      "stopLoss": 4089.147625,
+      "takeProfits": [
+        4102.532375000001,
+        4109.22475,
+        4115.917125
+      ],
+      "resultR": 0.9656837867396182,
+      "score": 56,
+      "exitReason": "breakeven",
+      "commissionR": 0.019373834807314347,
+      "slippageR": 0.014942378453090085
+    },
+    {
+      "entryTime": 1782337800000,
+      "exitTime": 1782338400000,
+      "direction": "long",
+      "entry": 3997.78,
+      "stopLoss": 3996.777321428571,
+      "takeProfits": [
+        3998.782678571429,
+        3999.785357142858,
+        4000.788035714287
+      ],
+      "resultR": 1.762891873926352,
+      "score": 57,
+      "exitReason": "all_targets",
+      "commissionR": 0.13737526765872946,
+      "slippageR": 0.09973285841491858
+    },
+    {
+      "entryTime": 1782343200000,
+      "exitTime": 1782344100000,
+      "direction": "long",
+      "entry": 3997.86,
+      "stopLoss": 3994.275125,
+      "takeProfits": [
+        4001.444875,
+        4005.02975,
+        4008.614625
+      ],
+      "resultR": 1.933880474683408,
+      "score": 55,
+      "exitReason": "all_targets",
+      "commissionR": 0.038224549899039326,
+      "slippageR": 0.02789497541755283
+    },
+    {
+      "entryTime": 1782425100000,
+      "exitTime": 1782425100000,
+      "direction": "long",
+      "entry": 4029.4100000000003,
+      "stopLoss": 4025.55175,
+      "takeProfits": [
+        4033.2682500000005,
+        4037.1265000000008,
+        4040.984750000001
+      ],
+      "resultR": -1.0614108123099695,
+      "score": 62,
+      "exitReason": "stop_loss",
+      "commissionR": 0.035492325949574466,
+      "slippageR": 0.025918486360395038
+    },
+    {
+      "entryTime": 1782954300000,
+      "exitTime": 1782954300000,
+      "direction": "long",
+      "entry": 4064.9,
+      "stopLoss": 4060.9278571428567,
+      "takeProfits": [
+        4068.8721428571434,
+        4072.844285714287,
+        4076.81642857143
+      ],
+      "resultR": -1.0584782394149912,
+      "score": 57,
+      "exitReason": "stop_loss",
+      "commissionR": 0.03330291123660918,
+      "slippageR": 0.02517532817838204
+    }
+  ]
 }

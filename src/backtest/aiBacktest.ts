@@ -41,7 +41,7 @@ export function makeAiSignalProvider(predictions: Map<number, AiPrediction>) {
   return (
     entryWindow: Candle[],
     _trendWindow: Candle[],
-    _higherTrendWindow: Candle[],
+    higherTrendWindow: Candle[],
     spread: number,
     config: AppConfig
   ): SignalDecision => {
@@ -51,7 +51,7 @@ export function makeAiSignalProvider(predictions: Map<number, AiPrediction>) {
     const prediction = predictions.get(latest.time);
     if (!prediction) return rejected(0, config, ["No AI prediction for this candle"]);
 
-    const result = buildAiSignal(prediction, entryWindow, spread, config);
+    const result = buildAiSignal(prediction, entryWindow, spread, config, higherTrendWindow);
     if (result.status !== "trade" || !result.direction) {
       return rejected(result.score, config, result.reasons);
     }
