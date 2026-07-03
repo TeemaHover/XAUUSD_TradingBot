@@ -1,0 +1,18 @@
+{
+  "totalTrades": 0,
+  "winRate": 0,
+  "profitFactor": 0,
+  "maxDrawdown": 0,
+  "expectancy": 0,
+  "totalReturn": 0,
+  "averageR": 0,
+  "endingBalance": 10000,
+  "performanceSummary": {
+    "grossWinR": 0,
+    "grossLossR": 0,
+    "rejectedByRisk": 0,
+    "rejectedByTradeGuard": 0,
+    "canceledLimitOrders": 0
+  },
+  "trades": []
+}

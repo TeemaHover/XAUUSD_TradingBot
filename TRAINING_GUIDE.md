@@ -9,7 +9,8 @@ Windows: use `python` instead of `python3`.
 
 ```bash
 # download 3 years of XAUUSD 5m/1h/4h data from Dukascopy (free, no MT5 needed)
-bash scripts/download_data.sh 3
+python scripts/download_data.py 3      # Windows / any OS
+# bash scripts/download_data.sh 3      # Mac/Linux alternative
 
 # compile the TypeScript backtester
 npm run build
