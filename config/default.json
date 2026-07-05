@@ -44,7 +44,7 @@
     "rangeShortThreshold": 85,
     "rangeMinAlternations": 2,
     "dumbMode": false,
-    "aiMode": false,
+    "aiMode": true,
     "aiConfidenceThreshold": 0.35,
     "aiModelPath": "models/ai_model.npz",
     "entryMode": "market",
