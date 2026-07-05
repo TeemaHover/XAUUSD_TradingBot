@@ -137,7 +137,8 @@ export interface AppConfig {
     intervalSeconds: number;
   };
   broker: {
-    mode: "mock" | "mt5" | "metaapi";
+    /** "auto" picks mt5 on Windows and metaapi on macOS/Linux */
+    mode: "mock" | "mt5" | "metaapi" | "auto";
   };
   timeframes: {
     entry: Timeframe;

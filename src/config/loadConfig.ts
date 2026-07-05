@@ -85,8 +85,8 @@ function validateConfig(config: AppConfig): void {
   assertPositive(config.bot.intervalSeconds, "bot.intervalSeconds");
   if (!config.journal) throw new Error("Invalid config: journal is required");
   if (!config.journal.path) throw new Error("Invalid config: journal.path is required");
-  if (!["mock", "mt5", "metaapi"].includes(config.broker.mode)) {
-    throw new Error("Invalid config: broker.mode must be mock, mt5, or metaapi");
+  if (!["mock", "mt5", "metaapi", "auto"].includes(config.broker.mode)) {
+    throw new Error("Invalid config: broker.mode must be mock, mt5, metaapi, or auto");
   }
   assertPositive(config.risk.riskPerTrade, "risk.riskPerTrade");
   assertNonNegative(config.risk.maxDailyLoss, "risk.maxDailyLoss");

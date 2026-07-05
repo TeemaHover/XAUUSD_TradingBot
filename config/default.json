@@ -5,7 +5,7 @@
     "intervalSeconds": 5
   },
   "broker": {
-    "mode": "mt5"
+    "mode": "auto"
   },
   "timeframes": {
     "entry": "5m",

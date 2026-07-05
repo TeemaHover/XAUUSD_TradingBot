@@ -31,6 +31,17 @@ async function fetchMarketSnapshot(broker: Broker, config: AppConfig): Promise<M
 }
 
 async function createBroker(config: AppConfig): Promise<Broker> {
+  // "auto": same command works on both machines — Windows talks to the local
+  // MT5 terminal, macOS/Linux goes through MetaApi cloud.
+  if (config.broker.mode === "auto") {
+    const resolved = process.platform === "win32" ? "mt5" : "metaapi";
+    logger.info("Broker mode AUTO resolved by platform", {
+      platform: process.platform,
+      broker: resolved
+    });
+    config.broker.mode = resolved;
+  }
+
   if (config.broker.mode === "mt5") {
     const broker = new Mt5Broker(config);
     await broker.connect();
