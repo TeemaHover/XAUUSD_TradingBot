@@ -24,7 +24,15 @@ function formatMeta(meta: unknown): string {
   return "\n" + lines.join("\n");
 }
 
+const LEVEL_RANK: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 };
+
+function minLevel(): number {
+  const configured = (process.env.LOG_LEVEL ?? "info").toLowerCase() as LogLevel;
+  return LEVEL_RANK[configured] ?? LEVEL_RANK.info;
+}
+
 function write(level: LogLevel, message: string, meta?: unknown): void {
+  if (LEVEL_RANK[level] < minLevel()) return;
   const timestamp = new Date().toISOString();
   console.log(`${timestamp} ${level.toUpperCase()} ${message}${formatMeta(meta)}`);
 }

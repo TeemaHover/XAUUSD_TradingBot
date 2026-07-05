@@ -14,7 +14,7 @@ REM    7. Backtest AI vs rules on the holdout
 REM    8. Per-regime breakdown reports
 REM ============================================================
 setlocal
-cd /d "%~dp0"
+cd /d "%~dp0\.."
 
 set FROM=2023-07-01
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd"') do set TO=%%i

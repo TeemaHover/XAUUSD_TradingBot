@@ -2,7 +2,7 @@
 # One-time setup for the XAUUSD TypeScript trading bot on a new Mac.
 # Run from Terminal:  cd ~/Desktop/XAUUSD_TradingBot && bash setup_mac.sh
 set -e
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 echo "==> 1/5 Checking Homebrew..."
 if ! command -v brew >/dev/null 2>&1; then
