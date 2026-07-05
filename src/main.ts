@@ -62,8 +62,8 @@ async function createBroker(config: AppConfig): Promise<Broker> {
       error: error instanceof Error ? error.message : String(error)
     });
     entryCandles = sampleCandles(config.mt5.bars.entry);
-    trendCandles = sampleCandles(config.mt5.bars.trend, 7);
-    higherTrendCandles = sampleCandles(config.mt5.bars.higherTrend, 13);
+    trendCandles = sampleCandles(config.mt5.bars.trend);
+    higherTrendCandles = sampleCandles(config.mt5.bars.higherTrend);
   }
 
   const broker = new MockBroker(config.mockBroker.balance, config.mockBroker.spread, {

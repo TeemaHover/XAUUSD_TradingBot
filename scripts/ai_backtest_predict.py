@@ -103,8 +103,11 @@ def main():
         X_1h = extract_sequence_matrix(candles_1h, window=SEQ_LEN, features=features)
         X_4h = extract_sequence_matrix(candles_4h, window=SEQ_LEN, features=features)
 
-        def align(candles_slow, X_slow):
-            end_times = [candles_slow[j + SEQ_LEN]["time"] for j in range(len(X_slow))]
+        def align(candles_slow, X_slow, tf_ms):
+            # CRITICAL: use CLOSE time (open + timeframe duration), matching
+            # ai_train.py. Aligning by open time would let the 5m bar see the
+            # still-forming 1h/4h candle = lookahead leak.
+            end_times = [candles_slow[j + SEQ_LEN]["time"] + tf_ms for j in range(len(X_slow))]
             out = np.empty(len(pred_idx), dtype=np.int64)
             for k, j in enumerate(pred_idx):
                 t = candles_5m[SEQ_LEN + int(j)]["time"]
@@ -112,8 +115,8 @@ def main():
                 out[k] = max(0, min(idx, len(X_slow) - 1))
             return out
 
-        idx_1h = align(candles_1h, X_1h)
-        idx_4h = align(candles_4h, X_4h)
+        idx_1h = align(candles_1h, X_1h, 3_600_000)
+        idx_4h = align(candles_4h, X_4h, 14_400_000)
 
     # --- batch predict -----------------------------------------------------
     print("Predicting ...")

@@ -201,7 +201,8 @@ def print_confusion(y_true, y_pred, labels=("BUY","SELL","HOLD")):
 def train_model(model, get_batch, predict_val, n_train: int, y_val: np.ndarray,
                 epochs: int, lr: float, class_weights: np.ndarray,
                 batch_size: int = 32,
-                lr_patience: int = 15, stop_patience: int = 40):
+                lr_patience: int = 15, stop_patience: int = 40,
+                weight_decay: float = 0.0):
     """
     Generic loop used by both single-TF and multi-TF models.
 
@@ -223,10 +224,10 @@ def train_model(model, get_batch, predict_val, n_train: int, y_val: np.ndarray,
         for start in range(0, n_train, batch_size):
             bi     = idx[start:start+batch_size]
             Xb, yb = get_batch(bi)
-            probs  = model.forward(Xb)
+            probs  = model.forward(Xb, training=True)   # enables dropout
             loss   = model.loss(probs, yb, class_weights)
             grads  = model.backward(Xb, yb, class_weights)
-            model.adam_step(grads, lr=current_lr)
+            model.adam_step(grads, lr=current_lr, weight_decay=weight_decay)
             total_loss += loss; batches += 1
 
         train_loss = total_loss / batches
@@ -301,6 +302,11 @@ def main():
                     help="move-mode: ATR multiplier for threshold (default 1.0)")
     ap.add_argument("--val-frac",  type=float, default=0.2, dest="val_frac",
                     help="Chronological validation fraction (default 0.2)")
+    ap.add_argument("--dropout",   type=float, default=0.3,
+                    help="Dropout rate on dense head during training "
+                         "(default 0.3; 0 disables)")
+    ap.add_argument("--weight-decay", type=float, default=1e-4, dest="weight_decay",
+                    help="AdamW decoupled weight decay (default 1e-4; 0 disables)")
     ap.add_argument("--out",       default="models/ai_model.npz")
     args = ap.parse_args()
 
@@ -359,9 +365,16 @@ def main():
         X_4h = extract_sequence_matrix(candles_4h, window=SEQ_LEN, features=feature_names)
         print(f"  1h matrix: {X_1h.shape}   4h matrix: {X_4h.shape}")
 
-        # Precompute window-end timestamps for alignment
-        times_1h_end = [candles_1h[j + SEQ_LEN]["time"] for j in range(len(X_1h))]
-        times_4h_end = [candles_4h[j + SEQ_LEN]["time"] for j in range(len(X_4h))]
+        # Precompute window-end timestamps for alignment.
+        # CRITICAL: use the candle's CLOSE time (open + timeframe duration),
+        # not its open time. Matching by open time lets a 5m bar see the
+        # still-forming 1h/4h candle, whose historical OHLC contains up to
+        # 1h/4h of FUTURE price action = lookahead leak that inflates
+        # backtests but cannot exist live.
+        MS_1H = 3_600_000
+        MS_4H = 14_400_000
+        times_1h_end = [candles_1h[j + SEQ_LEN]["time"] + MS_1H for j in range(len(X_1h))]
+        times_4h_end = [candles_4h[j + SEQ_LEN]["time"] + MS_4H for j in range(len(X_4h))]
 
         print("Aligning timeframes by timestamp ...")
         idx_1h = align_tf_index(candles_5m, X_1h, times_1h_end)
@@ -395,8 +408,9 @@ def main():
         print(f"  Class weights (train) - BUY={cw[0]:.2f}  SELL={cw[1]:.2f}  HOLD={cw[2]:.2f}")
 
         print(f"\nTraining MultiTFCNN ({len(tr_idx):,} samples, up to {args.epochs} epochs) ...")
-        print("  Architecture: 5m+1h+4h branches -> concat -> dense head\n")
-        model = MultiTFCNN(feature_names=feature_names)
+        print("  Architecture: 5m+1h+4h branches -> concat -> dense head")
+        print(f"  Regularization: dropout={args.dropout}  weight_decay={args.weight_decay}\n")
+        model = MultiTFCNN(feature_names=feature_names, dropout=args.dropout)
         train_model(
             model,
             get_batch   = lambda bi: ({tf: X_tr[tf][bi] for tf in tfs}, y_tr[bi]),
@@ -406,6 +420,7 @@ def main():
             epochs      = args.epochs,
             lr          = args.lr,
             class_weights = cw,
+            weight_decay = args.weight_decay,
         )
 
         print("\nOut-of-sample evaluation (validation set - never trained on):")
@@ -432,7 +447,8 @@ def main():
         print(f"  Class weights (train) - BUY={cw[0]:.2f}  SELL={cw[1]:.2f}  HOLD={cw[2]:.2f}")
 
         print(f"\nTraining CNN1D ({len(tr_idx):,} samples, up to {args.epochs} epochs, single-TF) ...")
-        model = CNN1D(feature_names=feature_names)
+        print(f"  Regularization: dropout={args.dropout}  weight_decay={args.weight_decay}")
+        model = CNN1D(feature_names=feature_names, dropout=args.dropout)
         train_model(
             model,
             get_batch   = lambda bi: (X_tr[bi], y_tr[bi]),
@@ -442,6 +458,7 @@ def main():
             epochs      = args.epochs,
             lr          = args.lr,
             class_weights = cw,
+            weight_decay = args.weight_decay,
         )
 
         print("\nOut-of-sample evaluation (validation set - never trained on):")

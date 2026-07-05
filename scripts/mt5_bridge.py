@@ -367,7 +367,11 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
                       "4h": mt5.TIMEFRAME_H4}
             candles_dict = {}
             for tf_name, mt5_tf in tf_map.items():
-                rates = mt5.copy_rates_from_pos(symbol, mt5_tf, 0, fetch)
+                # Start at pos 1, NOT 0: pos 0 is the still-forming candle.
+                # The model is trained on closed candles only (close-time
+                # alignment), so feeding it a partial bar would mismatch
+                # training and reintroduce inconsistency with the backtest.
+                rates = mt5.copy_rates_from_pos(symbol, mt5_tf, 1, fetch)
                 if rates is None or len(rates) == 0:
                     return {"direction": "hold", "confidence": 0.0,
                             "reason": f"no {tf_name} candles from MT5 for {symbol}"}
@@ -387,8 +391,9 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             # ── Single-TF: use candles passed in payload (or fetch 5m) ──
             candles = payload.get("candles", [])
             if len(candles) < needed:
-                # Fallback: fetch from MT5
-                rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, fetch)
+                # Fallback: fetch from MT5 (pos 1 = closed candles only,
+                # consistent with training)
+                rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 1, fetch)
                 if rates is None or len(rates) == 0:
                     return {"direction": "hold", "confidence": 0.0,
                             "reason": f"no candles from MT5 for {symbol}"}

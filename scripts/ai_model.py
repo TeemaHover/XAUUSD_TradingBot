@@ -178,7 +178,7 @@ class AdamMixin:
     def adam_step(self, grads: Dict[str, np.ndarray], param_map: Dict,
                   lr: float = 1e-3, beta1: float = 0.9,
                   beta2: float = 0.999, eps: float = 1e-8,
-                  clip_norm: float = 5.0):
+                  clip_norm: float = 5.0, weight_decay: float = 0.0):
         # ---- stability: skip non-finite batches, clip global gradient norm
         sq_sum = 0.0
         for g in grads.values():
@@ -198,6 +198,10 @@ class AdamMixin:
             layer, attr = param_map[k]
             param = getattr(layer, attr)
             param -= (lr * m_hat / (np.sqrt(v_hat) + eps)).astype(np.float32)
+            # Decoupled weight decay (AdamW): shrink weight matrices toward 0
+            # each step. Applied to _W only, never biases.
+            if weight_decay > 0.0 and k.endswith("_W"):
+                param -= (lr * weight_decay * param).astype(np.float32)
 
 
 # ══════════════════════════════════════════════════════════ CNN1D (v1) ══
@@ -206,10 +210,14 @@ class CNN1D(AdamMixin):
     """Single-timeframe 1D CNN. Kept for backward compatibility."""
 
     def __init__(self, seed: int = 42, n_features: int = None,
-                 feature_names: list = None):
+                 feature_names: list = None, dropout: float = 0.0):
         rng = np.random.default_rng(seed)
         self.feature_names = list(feature_names) if feature_names else list(DEFAULT_FEATURES)
         self.n_features = n_features if n_features is not None else len(self.feature_names)
+        self.dropout = float(dropout)
+        self._drop_rng = np.random.default_rng(seed + 777)
+        self._mask1 = None
+        self._mask2 = None
         self.conv1 = Conv1DLayer(self.n_features, 32, kernel=3, rng=rng)
         self.conv2 = Conv1DLayer(32, 64, kernel=5, rng=rng)
         self.fc1   = DenseLayer(64, 32, rng=rng)
@@ -232,17 +240,30 @@ class CNN1D(AdamMixin):
             "fc2_W":   (self.fc2,"W"),   "fc2_b":   (self.fc2,"b"),
         }
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: np.ndarray, training: bool = False) -> np.ndarray:
         h = self.conv1.forward(x); self._z1 = h; h = relu(h)
         h = self.conv2.forward(h); self._z2 = h; h = relu(h)
-        h = h.mean(axis=1); self._gap_out = h
+        h = h.mean(axis=1)
+        if training and self.dropout > 0.0:
+            self._mask1 = (self._drop_rng.random(h.shape) >= self.dropout
+                           ).astype(np.float32) / (1.0 - self.dropout)
+            h = h * self._mask1
+        else:
+            self._mask1 = None
+        self._gap_out = h
         h = self.fc1.forward(h); self._z3 = h; h = relu(h)
+        if training and self.dropout > 0.0:
+            self._mask2 = (self._drop_rng.random(h.shape) >= self.dropout
+                           ).astype(np.float32) / (1.0 - self.dropout)
+            h = h * self._mask2
+        else:
+            self._mask2 = None
         h = self.fc2.forward(h)
         self._probs = softmax(h)
         return self._probs
 
     def predict(self, x: np.ndarray) -> np.ndarray:
-        return self.forward(x)
+        return self.forward(x, training=False)
 
     def backward(self, x: np.ndarray, labels: np.ndarray,
                  class_weights: np.ndarray = None) -> Dict:
@@ -255,8 +276,12 @@ class CNN1D(AdamMixin):
         else:
             dz /= B
         dx_fc2, dW_fc2, db_fc2 = self.fc2.backward(dz)
+        if self._mask2 is not None:
+            dx_fc2 = dx_fc2 * self._mask2
         dx_fc2 *= relu_grad(self._z3)
         dx_fc1, dW_fc1, db_fc1 = self.fc1.backward(dx_fc2)
+        if self._mask1 is not None:
+            dx_fc1 = dx_fc1 * self._mask1
         T2 = self.conv2._x.shape[1] - self.conv2.kernel + 1
         d_gap = np.broadcast_to(dx_fc1[:,np.newaxis,:], (B, T2, 64)) / T2
         d_gap = d_gap.copy().astype(np.float32) * relu_grad(self._z2)
@@ -328,10 +353,14 @@ class MultiTFCNN(AdamMixin):
     TIMEFRAMES = MTF_TFS   # ["5m", "1h", "4h"]
 
     def __init__(self, seed: int = 42, n_features: int = None,
-                 feature_names: list = None):
+                 feature_names: list = None, dropout: float = 0.0):
         rng = np.random.default_rng(seed)
         self.feature_names = list(feature_names) if feature_names else list(DEFAULT_FEATURES)
         self.n_features = n_features if n_features is not None else len(self.feature_names)
+        self.dropout = float(dropout)          # applied only when training=True
+        self._drop_rng = np.random.default_rng(seed + 777)
+        self._mask1 = None
+        self._mask2 = None
         # One independent conv branch per TF
         self.branches: Dict[str, Dict] = {}
         for tf in self.TIMEFRAMES:
@@ -380,21 +409,35 @@ class MultiTFCNN(AdamMixin):
         return gap, z1, z2
 
     # ------------------------------------------------- full forward pass
-    def forward(self, x_dict: Dict[str, np.ndarray]) -> np.ndarray:
+    def forward(self, x_dict: Dict[str, np.ndarray], training: bool = False) -> np.ndarray:
         gaps, self._z_cache = [], {}
         for tf in self.TIMEFRAMES:
             gap, z1, z2 = self._branch_fwd(tf, x_dict[tf])
             gaps.append(gap)
             self._z_cache[tf] = (z1, z2)
         h = np.concatenate(gaps, axis=1)   # (B, 192)
+        # Inverted dropout on the concatenated branch features (train only)
+        if training and self.dropout > 0.0:
+            self._mask1 = (self._drop_rng.random(h.shape) >= self.dropout
+                           ).astype(np.float32) / (1.0 - self.dropout)
+            h = h * self._mask1
+        else:
+            self._mask1 = None
         self._concat = h
         h = self.fc1.forward(h); self._z3 = h.copy(); h = relu(h)
+        # Inverted dropout on the hidden layer (train only)
+        if training and self.dropout > 0.0:
+            self._mask2 = (self._drop_rng.random(h.shape) >= self.dropout
+                           ).astype(np.float32) / (1.0 - self.dropout)
+            h = h * self._mask2
+        else:
+            self._mask2 = None
         h = self.fc2.forward(h)
         self._probs = softmax(h)
         return self._probs
 
     def predict(self, x_dict: Dict[str, np.ndarray]) -> np.ndarray:
-        return self.forward(x_dict)
+        return self.forward(x_dict, training=False)
 
     # ------------------------------------------------ backward pass
     def backward(self, x_dict: Dict[str, np.ndarray],
@@ -415,9 +458,13 @@ class MultiTFCNN(AdamMixin):
         dx_fc2, dW_fc2, db_fc2 = self.fc2.backward(dz)
         grads["fc2_W"] = dW_fc2; grads["fc2_b"] = db_fc2
 
+        if self._mask2 is not None:      # dropout on hidden layer
+            dx_fc2 = dx_fc2 * self._mask2
         dx_fc2 *= relu_grad(self._z3)
         dx_fc1, dW_fc1, db_fc1 = self.fc1.backward(dx_fc2)
         grads["fc1_W"] = dW_fc1; grads["fc1_b"] = db_fc1
+        if self._mask1 is not None:      # dropout on concat features
+            dx_fc1 = dx_fc1 * self._mask1
 
         # Split gradient to each branch (each occupies BRANCH_DIM columns)
         for i, tf in enumerate(self.TIMEFRAMES):
