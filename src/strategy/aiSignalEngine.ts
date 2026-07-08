@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { AppConfig, Candle } from "../types";
 import { detectSR } from "./srDetector";
+import { detectFvg } from "./fvgDetector";
 import { detectTrend } from "./trendDetector";
 import { logger } from "../logger/logger";
 
@@ -17,6 +18,7 @@ export interface AiSignalResult {
   entry?: number;
   stopLoss?: number;
   takeProfits?: number[];
+  entryType?: "market" | "limit";
   score: number;
   confidence: number;
   reasons: string[];
@@ -100,7 +102,8 @@ export function buildAiSignal(
   candles: Candle[],
   spread: number,
   config: AppConfig,
-  higherTrendCandles?: Candle[]
+  higherTrendCandles?: Candle[],
+  trendCandles?: Candle[]
 ): AiSignalResult {
   const threshold = config.strategy.aiConfidenceThreshold ?? 0.5;
   const reasons: string[] = [
@@ -147,9 +150,10 @@ export function buildAiSignal(
 
   const latest = candles.at(-1)!;
   const direction = prediction.direction;
-  const entry = direction === "long"
+  let entry = direction === "long"
     ? latest.close + spread / 2
     : latest.close - spread / 2;
+  let entryType: "market" | "limit" = "market";
 
   // ATR for SL distance
   const atrValues: number[] = [];
@@ -166,11 +170,52 @@ export function buildAiSignal(
     ? atrValues.reduce((a, b) => a + b, 0) / atrValues.length
     : 1;
 
-  // SL: try S/R zone boundary first, fall back to 1.5x ATR
+  // FVG pullback entry: instead of chasing at market, park a limit order in
+  // an unfilled fair value gap so the pullback comes to us (better price,
+  // tighter stop). Gaps are searched on all available timeframes, preferring
+  // higher ones (stronger zones) as long as the entry is realistically
+  // reachable (within maxLimitDistanceAtr of current price).
+  // Falls back to market entry when no usable gap exists.
+  let fvgZone: { low: number; high: number } | undefined;
+  if ((config.strategy.aiEntryMode ?? "market") === "fvg") {
+    const maxReach = atrVal * 3; // limit orders farther than this rarely fill before expiry
+    const timeframeSets: Array<{ label: string; set: Candle[] | undefined }> = [
+      { label: "4h", set: higherTrendCandles },
+      { label: "1h", set: trendCandles },
+      { label: "5m", set: candles }
+    ];
+
+    for (const { label, set } of timeframeSets) {
+      if (!set || set.length < 3) continue;
+      const fvg = detectFvg(set, config);
+      const zone = direction === "long" ? fvg.bullish : fvg.bearish;
+      if (!zone || zone.filledPercent >= 80) continue;
+
+      const zoneEntry = (zone.high + zone.low) / 2; // midpoint of the gap
+      const improves = direction === "long" ? zoneEntry < entry : zoneEntry > entry;
+      const reachable = Math.abs(zoneEntry - latest.close) <= maxReach;
+      if (improves && reachable) {
+        entry = zoneEntry;
+        entryType = "limit";
+        fvgZone = zone;
+        reasons.push(`FVG pullback entry (${label}): limit at gap midpoint (${zone.low.toFixed(2)}-${zone.high.toFixed(2)}, ${zone.filledPercent.toFixed(0)}% filled)`);
+        break; // highest usable timeframe wins
+      }
+    }
+    if (!fvgZone) {
+      reasons.push("No reachable unfilled FVG on 4h/1h/5m — market entry");
+    }
+  }
+
+  // SL: FVG boundary if entering on a gap, else S/R zone boundary, else 1.5x ATR
   const sr = detectSR(candles, config);
   let stopLoss: number;
 
-  if (direction === "long" && sr.supportZones.length > 0) {
+  if (fvgZone) {
+    stopLoss = direction === "long"
+      ? fvgZone.low - atrVal * config.risk.stopBufferAtr
+      : fvgZone.high + atrVal * config.risk.stopBufferAtr;
+  } else if (direction === "long" && sr.supportZones.length > 0) {
     const nearest = sr.supportZones
       .filter((z) => z.high < entry)
       .sort((a, b) => b.high - a.high)[0];
@@ -188,6 +233,14 @@ export function buildAiSignal(
     stopLoss = direction === "long"
       ? entry - atrVal * 1.5
       : entry + atrVal * 1.5;
+  }
+
+  // Cap the stop: a far-away S/R zone must not create an oversized SL,
+  // because TPs are R-multiples and would drift out of reach with it.
+  const maxStop = atrVal * (config.risk.maxStopAtr ?? 2.5);
+  if (Math.abs(entry - stopLoss) > maxStop) {
+    stopLoss = direction === "long" ? entry - maxStop : entry + maxStop;
+    reasons.push(`SL capped at ${(config.risk.maxStopAtr ?? 2.5)}x ATR`);
   }
 
   const risk = Math.abs(entry - stopLoss);
@@ -218,6 +271,7 @@ export function buildAiSignal(
     entry,
     stopLoss,
     takeProfits: tps,
+    entryType,
     score,
     confidence: prediction.confidence,
     reasons

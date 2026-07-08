@@ -178,7 +178,7 @@ async function scanOnce(
       config.strategy.aiModelPath,
       config.mt5.pythonPath
     );
-    const aiResult = buildAiSignal(prediction, entryCandles, spread, config, higherTrendCandles);
+    const aiResult = buildAiSignal(prediction, entryCandles, spread, config, higherTrendCandles, trendCandles);
     decision = {
       status: aiResult.status,
       score: aiResult.score,
@@ -199,6 +199,7 @@ async function scanOnce(
         entry: aiResult.entry!,
         stopLoss: aiResult.stopLoss!,
         takeProfits: aiResult.takeProfits!,
+        entryType: aiResult.entryType,
         score: aiResult.score,
         reasons: aiResult.reasons,
         timestamp: entryCandles.at(-1)?.time ?? Date.now()

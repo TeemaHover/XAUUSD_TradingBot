@@ -151,6 +151,8 @@ export interface AppConfig {
     maxConsecutiveLosses: number;
     minStopDistance: number;
     stopBufferAtr: number;
+    /** cap AI stop-loss distance at this many ATRs (default 2.5) */
+    maxStopAtr?: number;
     contractSize: number;
     tickSize: number;
     tickValue: number;
@@ -196,6 +198,8 @@ export interface AppConfig {
     aiModelPath: string;
     /** reject AI trades that fight the higher-timeframe trend (default true) */
     aiTrendFilter?: boolean;
+    /** "fvg" = enter AI trades as limit orders on the pullback into an unfilled fair value gap; "market" = enter immediately (default) */
+    aiEntryMode?: "market" | "fvg";
     srProximityAtr: number;
     srZoneToleranceAtr: number;
   };

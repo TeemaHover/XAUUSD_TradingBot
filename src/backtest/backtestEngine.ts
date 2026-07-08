@@ -247,7 +247,13 @@ export function runBacktest(
   const endIndex = Math.min(candles.length, options.endIndex ?? candles.length);
 
   let currentDay = -1;
+  const totalCandles = Math.max(1, endIndex - 1 - startIndex);
   for (let i = startIndex; i < endIndex - 1; i += 1) {
+    // Heartbeat so quiet log levels still show the backtest is alive.
+    const processed = i - startIndex;
+    if (processed > 0 && processed % 20000 === 0) {
+      logger.warn(`Backtest progress: ${Math.round((processed / totalCandles) * 100)}% (candle ${processed.toLocaleString()} of ${totalCandles.toLocaleString()})`);
+    }
     // New UTC day: reset daily loss + consecutive-loss streak (mirrors live,
     // where the risk guard is rehydrated from the current day's history).
     const candleDay = Math.floor(candles[i].time / 86_400_000);
