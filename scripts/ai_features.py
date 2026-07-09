@@ -25,6 +25,8 @@ Groups:
                     falling wedge: both < 0 converging; descending triangle:
                     slope_low ~ 0, slope_high < 0; rectangle: both ~ 0
       convergence   channel width now / width 40 bars ago (0-1 = contracting)
+      fvg_dist      unfilled fair-value-gap proximity, same encoding as sr_dist
+      round_dist    psychological round-number level proximity ($25 grid)
 
 Feature spec strings (for --features): group names and/or feature names,
 comma-separated. Examples: "base,patterns" (default), "all",
@@ -48,13 +50,15 @@ TIMEFRAMES       = ["5m", "1h", "4h"]   # must match MultiTFCNN.TIMEFRAMES
 BASE_FEATURES    = ["open_ret", "body_ret", "upper_wick", "lower_wick",
                     "range_ret", "vol_ratio", "pos_20"]
 PATTERN_FEATURES = ["vol_pressure", "engulfing", "pinbar", "dbl_retest", "compression"]
-CONTEXT_FEATURES = ["sr_dist", "ob_dist", "slope_high", "slope_low", "convergence"]
+CONTEXT_FEATURES = ["sr_dist", "ob_dist", "slope_high", "slope_low", "convergence",
+                    "fvg_dist", "round_dist"]
 ALL_FEATURES     = BASE_FEATURES + PATTERN_FEATURES + CONTEXT_FEATURES
 
 FEATURE_GROUPS = {
     "base":     BASE_FEATURES,
     "patterns": PATTERN_FEATURES,
     "context":  CONTEXT_FEATURES,
+    "poi":      ["sr_dist", "ob_dist", "fvg_dist", "round_dist"],
     "all":      ALL_FEATURES,
 }
 
@@ -275,10 +279,36 @@ def _c_convergence(h):
     past = float(np.max(h["highs"][-60:-40]) - np.min(h["lows"][-60:-40]))
     return float(np.clip(now / (past + 1e-8), 0., 2.)) / 2.
 
+def _c_fvg_dist(h):
+    """Nearest unfilled fair-value-gap edge (3-candle imbalance), sr_dist encoding."""
+    highs, lows = h["highs"], h["lows"]
+    n = len(highs)
+    edges = []
+    for j in range(2, n):
+        if lows[j] > highs[j - 2]:                    # bullish FVG (below price)
+            top, bottom = lows[j], highs[j - 2]
+            later = lows[j + 1:]
+            if later.size == 0 or float(np.min(later)) > bottom:   # not fully filled
+                edges.append(top)
+        elif highs[j] < lows[j - 2]:                  # bearish FVG (above price)
+            top, bottom = lows[j - 2], highs[j]
+            later = highs[j + 1:]
+            if later.size == 0 or float(np.max(later)) < top:
+                edges.append(bottom)
+    return _proximity(h["close"], edges, h["atr_now"])
+
+ROUND_GRID = 25.0   # gold psychological levels: 2650, 2675, 2700 ...
+
+def _c_round_dist(h):
+    """Proximity to the nearest round-number level, sr_dist encoding."""
+    below = float(np.floor(h["close"] / ROUND_GRID)) * ROUND_GRID
+    return _proximity(h["close"], [below, below + ROUND_GRID], h["atr_now"])
+
 CONTEXT = {
     "sr_dist": _c_sr_dist, "ob_dist": _c_ob_dist,
     "slope_high": _c_slope_high, "slope_low": _c_slope_low,
     "convergence": _c_convergence,
+    "fvg_dist": _c_fvg_dist, "round_dist": _c_round_dist,
 }
 
 

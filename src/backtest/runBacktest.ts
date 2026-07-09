@@ -88,6 +88,17 @@ function compareAi(): void {
     startIndex,
     signalProvider: makeAiSignalProvider(predictions)
   });
+
+  if (process.argv.includes("--ai-only")) {
+    /* eslint-disable no-console */
+    console.log("\n=== AI BACKTEST (rules comparison skipped: --ai-only) ===");
+    console.log(tableHeader);
+    console.log(row("AI (CNN predictions)", ai));
+    console.log("Details: backtest-ai.json");
+    /* eslint-enable no-console */
+    return;
+  }
+
   const rules = runBacktest(candles, config, "backtest-rules-holdout.json", { startIndex });
 
   /* eslint-disable no-console */
