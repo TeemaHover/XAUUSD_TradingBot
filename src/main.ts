@@ -163,7 +163,6 @@ async function scanOnce(
   journal: SqliteJournal,
   mode: TradingMode
 ): Promise<void> {
-  logger.separator();
   const { entryCandles, trendCandles, higherTrendCandles } = await fetchMarketSnapshot(broker, config);
   const spread = await broker.getSpread(config.symbol);
   // --- AI mode: bypass rule engine, use neural network ---
@@ -218,19 +217,29 @@ async function scanOnce(
   const range = detectRange(entryCandles, config, config.timeframes.entry);
   const sr = detectSR(entryCandles, config);
 
-  logger.info("Signal calculation", {
-    mode,
-    action,
-    status: decision.status,
-    score: decision.score,
-    price: currentPrice.toFixed(2),
-    recentHigh: recentHigh.toFixed(2),
-    recentLow: recentLow.toFixed(2),
-    nearestSR: srSummary(sr, currentPrice),
-    range: range.summary,
-    finalDecision: decision.finalDecision,
-    reasons: decision.reasons
-  });
+  if (decision.status === "rejected" && !decision.signal) {
+    // Routine WAIT cycle: one line instead of the full block. The AI line in
+    // reasons carries direction+confidence; last reason is the blocker.
+    const aiLine = decision.reasons.find((r) => r.includes("Confidence")) ?? "";
+    const blocker = decision.reasons[decision.reasons.length - 1] ?? "";
+    logger.info(
+      `WAIT ${currentPrice.toFixed(2)} | ${aiLine.replace("- ", "")}${blocker && blocker !== aiLine ? " | " + blocker : ""}`
+    );
+  } else {
+    logger.info("Signal calculation", {
+      mode,
+      action,
+      status: decision.status,
+      score: decision.score,
+      price: currentPrice.toFixed(2),
+      recentHigh: recentHigh.toFixed(2),
+      recentLow: recentLow.toFixed(2),
+      nearestSR: srSummary(sr, currentPrice),
+      range: range.summary,
+      finalDecision: decision.finalDecision,
+      reasons: decision.reasons
+    });
+  }
 
   if (decision.signal) {
     dashboardState.lastSignal = decision.signal;
