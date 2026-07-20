@@ -94,7 +94,9 @@ export const TRADING_MODES: Record<TradingMode, ModeOverride> = {
     description: "Neural network predictions — train first with ai_train.py.",
     strategy: {
       aiMode: true,
-      aiConfidenceThreshold: 0.55,
+      // 0.35 validated by threshold sweep (logs/ablation/sweep_baseline.log);
+      // this model's softmax rarely exceeds 0.45, so higher = no trades
+      aiConfidenceThreshold: 0.35,
       aiModelPath: "models/ai_model.npz",
       dumbMode: false,
       minScore: 1,

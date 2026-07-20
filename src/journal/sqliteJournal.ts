@@ -98,7 +98,7 @@ export class SqliteJournal {
         `SELECT value FROM settings WHERE key = 'trading_mode'`
       ).get() as { value: string } | undefined;
       if (!row) return undefined;
-      const valid: TradingMode[] = ["beginner", "advanced", "expert"];
+      const valid: TradingMode[] = ["beginner", "advanced", "expert", "dumb", "ai"];
       return valid.includes(row.value as TradingMode) ? (row.value as TradingMode) : undefined;
     } catch {
       return undefined;
