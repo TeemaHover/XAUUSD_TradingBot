@@ -113,7 +113,7 @@ function validateConfig(config: AppConfig): void {
   assertPositive(config.regime.lookback, "regime.lookback");
   assertPositive(config.news.blackoutMinutesBefore, "news.blackoutMinutesBefore");
   assertPositive(config.news.blackoutMinutesAfter, "news.blackoutMinutesAfter");
-  assertPositive(config.tradeGuards.cooldownAfterLossMinutes, "tradeGuards.cooldownAfterLossMinutes");
+  assertNonNegative(config.tradeGuards.cooldownAfterLossMinutes, "tradeGuards.cooldownAfterLossMinutes");
   assertNonNegative(config.tradeGuards.maxTradesPerSession, "tradeGuards.maxTradesPerSession");
   if (!Number.isFinite(config.sessions.utcOffsetMinutes)) {
     throw new Error("Invalid config: sessions.utcOffsetMinutes must be finite");
