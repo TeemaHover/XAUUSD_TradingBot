@@ -13,9 +13,9 @@
     "higherTrend": "4h"
   },
   "risk": {
-    "riskPerTrade": 0.05,
+    "riskPerTrade": 0.1,
     "maxDailyLoss": 0,
-    "maxConsecutiveLosses": 3,
+    "maxConsecutiveLosses": 0,
     "minStopDistance": 0.5,
     "stopBufferAtr": 0.1,
     "maxStopAtr": 2.5,
