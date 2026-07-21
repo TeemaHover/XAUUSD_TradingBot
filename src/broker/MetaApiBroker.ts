@@ -212,6 +212,8 @@ export class MetaApiBroker implements Broker {
           stopLoss: num(p.stopLoss, 0),
           takeProfits: p.takeProfit ? [Number(p.takeProfit)] : [],
           openedAt: new Date((p.time as string | number | Date) ?? Date.now()).getTime(),
+          profit: num((p as { profit?: number; unrealizedProfit?: number }).profit
+            ?? (p as { unrealizedProfit?: number }).unrealizedProfit, 0),
           comment: p.comment ? String(p.comment) : undefined
         };
       });

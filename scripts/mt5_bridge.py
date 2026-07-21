@@ -53,6 +53,7 @@ def position_to_dict(position) -> Dict[str, Any]:
         "stopLoss": float(position.sl),
         "takeProfits": [float(position.tp)] if float(position.tp) > 0 else [],
         "openedAt": int(position.time) * 1000,
+        "profit": float(position.profit + position.swap),
         "comment": position.comment,
     }
 

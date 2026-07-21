@@ -58,7 +58,8 @@
     "rangeAdxThreshold": 16,
     "highVolatilityAtrMultiplier": 1.4,
     "lowVolatilityAtrMultiplier": 0.7,
-    "lookback": 80
+    "lookback": 80,
+    "hmmModelPath": "models/hmm_model.npz"
   },
   "adaptiveScoring": {
     "enabled": true,

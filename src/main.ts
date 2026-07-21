@@ -16,6 +16,8 @@ import { TelegramAlerts } from "./alerts/telegram";
 import { SqliteJournal } from "./journal/sqliteJournal";
 import { applyTradingMode, TRADING_MODES } from "./modes/tradingModes";
 import { aiPredict, buildAiSignal } from "./strategy/aiSignalEngine";
+import { detectMarketRegime } from "./strategy/marketRegimeDetector";
+import { hmmPredict } from "./strategy/hmmRegime";
 
 interface MarketSnapshot {
   entryCandles: Candle[];
@@ -189,6 +191,21 @@ async function scanOnce(
     loopState.lastCandleTime = latestCandleTime;
     loopState.skipLogged = false;
   }
+
+  // Regime snapshot for the dashboard (once per candle, display-only).
+  const rulesRegime = detectMarketRegime(entryCandles, config);
+  const hmmRegime = await hmmPredict(
+    entryCandles,
+    config.regime.hmmModelPath ?? "models/hmm_model.npz",
+    config.mt5.pythonPath
+  );
+  dashboardState.regime = {
+    hmmState: hmmRegime.state,
+    hmmLabel: hmmRegime.label,
+    hmmConfidence: hmmRegime.confidence,
+    rules: rulesRegime.regime,
+    updatedAt: Date.now()
+  };
 
   const spread = await broker.getSpread(config.symbol);
   // --- AI mode: bypass rule engine, use neural network ---

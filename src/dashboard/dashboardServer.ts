@@ -11,6 +11,13 @@ export interface DashboardState {
   lastDecision?: SignalDecision;
   lastSignal?: TradeSignal;
   dailyPnl: number;
+  regime?: {
+    hmmState: number;
+    hmmLabel: string;
+    hmmConfidence: number;
+    rules: string;
+    updatedAt: number;
+  };
 }
 
 /**
@@ -139,6 +146,7 @@ export class DashboardServer {
       history,
       lastDecision: this.state.lastDecision ?? null,
       lastSignal: this.state.lastSignal ?? null,
+      regime: this.state.regime ?? null,
       recentSignals: this.querySignals(120),
       recentTrades: this.queryTrades(20),
       equitySeries: this.equitySeries,
@@ -278,9 +286,10 @@ const PAGE_HTML = `<!DOCTYPE html>
         <div class="brand-title">XAUUSD BOT · <span class="accent">GOLDFISH</span></div>
       </div>
     </div>
-    <div style="display:flex; gap:8px; align-items:center;">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <span class="pill live" id="pill-live">● LIVE · DEMO</span>
       <span class="pill" id="pill-mode">MODE · —</span>
+      <span class="pill" id="pill-regime">REGIME · —</span>
       <span class="pill" id="clock">--:--:-- UTC</span>
     </div>
   </div>
@@ -328,8 +337,14 @@ const PAGE_HTML = `<!DOCTYPE html>
         <span class="panel-title">● Open Positions</span>
         <span class="panel-note" id="open-note">0 OPEN</span>
       </div>
-      <table><thead><tr><th>DIR</th><th>VOL</th><th>ENTRY</th><th>SL</th><th>OPENED</th></tr></thead>
+      <table><thead><tr><th>DIR</th><th>VOL</th><th>ENTRY</th><th>SL</th><th>OPENED</th><th>PNL</th></tr></thead>
       <tbody id="open-body"></tbody></table>
+      <div class="panel-head" style="margin-top:14px;">
+        <span class="panel-title">● Closed Trades · Today</span>
+        <span class="panel-note" id="closed-note">—</span>
+      </div>
+      <table><thead><tr><th>CLOSED</th><th>DIR</th><th>VOL</th><th>PNL</th><th>RESULT</th></tr></thead>
+      <tbody id="closed-body"></tbody></table>
       <div class="panel-head" style="margin-top:14px;">
         <span class="panel-title">● Recent Signals</span>
       </div>
@@ -475,17 +490,51 @@ const PAGE_HTML = `<!DOCTYPE html>
     $("sig-time").textContent = "LAST CYCLE " + utc(state.timestamp) + " UTC";
   }
 
+  function pnlCell(v) {
+    if (v === null || v === undefined || isNaN(v)) return "<td>—</td>";
+    var cls = v >= 0 ? "up" : "down";
+    return '<td class="' + cls + '">' + (v >= 0 ? "+" : "") + fmt(v, 2) + "</td>";
+  }
+
+  function resultCell(v) {
+    if (v === null || v === undefined || isNaN(v)) return "<td>—</td>";
+    if (v > 0) return '<td class="up">WIN</td>';
+    if (v < 0) return '<td class="down">LOSS</td>';
+    return "<td>BE</td>";
+  }
+
   function renderTables(state) {
     var open = state.openTrades || [];
-    $("open-note").textContent = open.length + " OPEN";
+    var openPnl = 0, hasPnl = false;
     var html = "", i;
     for (i = 0; i < open.length; i++) {
       var p = open[i];
+      if (typeof p.profit === "number") { openPnl += p.profit; hasPnl = true; }
       html += "<tr><td class=" + (p.direction === "long" ? "up" : "down") + ">" + p.direction.toUpperCase() +
         "</td><td>" + p.volume + "</td><td>" + fmt(p.entry) + "</td><td>" + fmt(p.stopLoss) +
-        "</td><td>" + utc(p.openedAt) + "</td></tr>";
+        "</td><td>" + utc(p.openedAt) + "</td>" + pnlCell(p.profit) + "</tr>";
     }
-    $("open-body").innerHTML = html || '<tr><td colspan="5" style="color:#8b887c">no open positions</td></tr>';
+    $("open-note").textContent = open.length + " OPEN" +
+      (hasPnl ? " · " + (openPnl >= 0 ? "+" : "") + fmt(openPnl, 2) + " FLOATING" : "");
+    $("open-body").innerHTML = html || '<tr><td colspan="6" style="color:#8b887c">no open positions</td></tr>';
+
+    var hist = (state.history || []).slice().sort(function (a, b) { return (b.closedAt || 0) - (a.closedAt || 0); });
+    var closedPnl = 0, winCount = 0, lossCount = 0;
+    html = "";
+    for (i = 0; i < Math.min(hist.length, 12); i++) {
+      var h = hist[i];
+      html += "<tr><td>" + utc(h.closedAt) + "</td><td class=" + (h.direction === "long" ? "up" : "down") + ">" +
+        h.direction.toUpperCase() + "</td><td>" + h.volume + "</td>" + pnlCell(h.profit) + resultCell(h.profit) + "</tr>";
+    }
+    for (i = 0; i < hist.length; i++) {
+      var hp = hist[i].profit || 0;
+      closedPnl += hp;
+      if (hp > 0) winCount++; else if (hp < 0) lossCount++;
+    }
+    $("closed-note").textContent = hist.length === 0 ? "NONE YET" :
+      hist.length + " CLOSED · " + winCount + "W " + lossCount + "L · " +
+      (closedPnl >= 0 ? "+" : "") + fmt(closedPnl, 2) + " TOTAL";
+    $("closed-body").innerHTML = html || '<tr><td colspan="5" style="color:#8b887c">no closed trades today</td></tr>';
 
     var sigs = (state.recentSignals || []).slice(0, 10);
     html = "";
@@ -516,6 +565,13 @@ const PAGE_HTML = `<!DOCTYPE html>
       $("hdr-sub").textContent = "AUTONOMOUS · " + (state.aiMode ? "AI MODE" : "RULES MODE") +
         " · LIVE ON " + (state.brokerMode || "?").toUpperCase() + " · RISK " + fmt(state.riskPerTrade * 100, 1) + "%";
       $("pill-mode").textContent = "MODE · " + (state.aiMode ? "AI" : "RULES");
+      var rg = state.regime;
+      if (rg && rg.hmmLabel && rg.hmmLabel !== "unknown") {
+        $("pill-regime").textContent = "REGIME · HMM " + rg.hmmLabel.toUpperCase() + " " +
+          fmt(rg.hmmConfidence * 100, 0) + "% · " + (rg.rules || "").toUpperCase();
+      } else {
+        $("pill-regime").textContent = "REGIME · " + (rg && rg.rules ? rg.rules.toUpperCase() : "—");
+      }
       $("lbl-sym").textContent = state.symbol || "GOLD";
       var bal = $("balance");
       bal.textContent = money(state.balance);

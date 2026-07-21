@@ -146,9 +146,14 @@ class GaussianHMM:
             out[t] = a
         return out
 
-    def save(self, path):
+    def save(self, path, mu=None, sd=None):
+        # mu/sd are the train-time standardization stats; hmm_predict_live.py
+        # needs them to standardize live candles the same way as training.
+        extra = {}
+        if mu is not None and sd is not None:
+            extra = {"mu": mu, "sd": sd}
         np.savez(path, pi=self.pi, A=self.A, means=self.means,
-                 vars=self.vars, K=np.array(self.K))
+                 vars=self.vars, K=np.array(self.K), **extra)
         print(f"HMM saved -> {path}")
 
 
@@ -213,7 +218,7 @@ def main():
     print(f"\nWrote {len(times):,} rows -> {args.out}")
 
     os.makedirs(os.path.dirname(args.model_out) or ".", exist_ok=True)
-    model.save(args.model_out)
+    model.save(args.model_out, mu=mu, sd=sd)
 
     print("\nNext: run a backtest, then:")
     print(f"  python scripts/regime_report.py backtest-results.json {args.out}")

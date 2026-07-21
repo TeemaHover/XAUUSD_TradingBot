@@ -212,6 +212,8 @@ export interface AppConfig {
     highVolatilityAtrMultiplier: number;
     lowVolatilityAtrMultiplier: number;
     lookback: number;
+    /** Trained HMM model for regime display (scripts/hmm_regime.py output). */
+    hmmModelPath?: string;
   };
   adaptiveScoring: {
     enabled: boolean;
@@ -332,6 +334,8 @@ export interface Position extends OrderRequest {
   remainingVolume: number;
   closedAt?: number;
   realizedR?: number;
+  /** Floating PnL (incl. swap) reported by the broker, when available. */
+  profit?: number;
 }
 
 export interface TradeHistoryItem extends Position {
