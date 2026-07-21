@@ -20,6 +20,7 @@ import { Candle, LiquidityResult, MarketStructureResult, TradeSignal, TrendResul
 import { formatOpenPositionAlert } from "../src/execution/executionEngine";
 import { formatBotStartedAlert, formatBotStoppedAlert } from "../src/main";
 import { SqliteJournal } from "../src/journal/sqliteJournal";
+import { basicAuthOk } from "../src/dashboard/dashboardServer";
 
 function testEma(): void {
   const values = ema([1, 2, 3, 4], 3);
@@ -154,18 +155,39 @@ function testSqliteJournalWrites(): void {
 
 function testBotLifecycleAlertMessages(): void {
   const config = loadConfig();
+  const brokerLine = new RegExp("Broker: " + config.broker.mode.toUpperCase());
   const started = formatBotStartedAlert(config, 10000, "expert");
   assert.match(started, /Bot started/);
   assert.match(started, /Symbol: GOLD/);
-  assert.match(started, /Broker: MT5/);
+  assert.match(started, brokerLine);
   assert.match(started, /Loop: ON every \d+s/);
   assert.match(started, /Balance: 10000/);
 
   const stopped = formatBotStoppedAlert(config);
   assert.match(stopped, /Bot stopped/);
   assert.match(stopped, /Symbol: GOLD/);
-  assert.match(stopped, /Broker: MT5/);
+  assert.match(stopped, brokerLine);
   assert.match(stopped, /Stopped at:/);
+}
+
+function testDashboardBasicAuth(): void {
+  const header = (user: string, pass: string) =>
+    "Basic " + Buffer.from(user + ":" + pass).toString("base64");
+
+  // No password configured -> everything allowed (localhost use)
+  assert.equal(basicAuthOk(undefined, undefined), true);
+  assert.equal(basicAuthOk(undefined, ""), true);
+  assert.equal(basicAuthOk(header("u", "anything"), ""), true);
+
+  // Password configured -> header required and password must match
+  assert.equal(basicAuthOk(undefined, "secret"), false);
+  assert.equal(basicAuthOk("Bearer abc", "secret"), false);
+  assert.equal(basicAuthOk(header("u", "wrong"), "secret"), false);
+  assert.equal(basicAuthOk(header("u", "secret"), "secret"), true);
+  // Username is ignored — only the password matters
+  assert.equal(basicAuthOk(header("someone-else", "secret"), "secret"), true);
+  // Password containing ":" still works (split at first colon only)
+  assert.equal(basicAuthOk(header("u", "se:cret"), "se:cret"), true);
 }
 
 function testRiskGuard(): void {
@@ -536,6 +558,7 @@ testTelegramEnvOverrides();
 testOpenPositionAlertMessage();
 testSqliteJournalWrites();
 testBotLifecycleAlertMessages();
+testDashboardBasicAuth();
 testRiskGuard();
 testRiskGuardHydratesFromHistory();
 testVolumeNormalization();

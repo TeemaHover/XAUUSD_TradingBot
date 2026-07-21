@@ -155,15 +155,41 @@ export function formatBotStoppedAlert(config: AppConfig): string {
   ].join("\n");
 }
 
+interface LoopState {
+  lastCandleTime?: number;
+  skipLogged?: boolean;
+}
+
 async function scanOnce(
   broker: Broker,
   config: AppConfig,
   execution: ExecutionEngine,
   dashboardState: DashboardState,
   journal: SqliteJournal,
-  mode: TradingMode
+  mode: TradingMode,
+  loopState: LoopState
 ): Promise<void> {
   const { entryCandles, trendCandles, higherTrendCandles } = await fetchMarketSnapshot(broker, config);
+
+  // One decision per entry candle: with a short poll interval the same candle
+  // would otherwise be evaluated many times, firing duplicate market orders
+  // and long/short flip-flops inside a single bar. The bridge returns closed
+  // bars only, so a new last-candle time means a candle just closed.
+  const latestCandleTime = entryCandles.at(-1)?.time;
+  if ((config.bot.evaluateOncePerCandle ?? true) && latestCandleTime !== undefined) {
+    if (loopState.lastCandleTime === latestCandleTime) {
+      if (!loopState.skipLogged) {
+        logger.info(
+          `Candle ${new Date(latestCandleTime).toISOString()} already evaluated — waiting for next ${config.timeframes.entry} close`
+        );
+        loopState.skipLogged = true;
+      }
+      return;
+    }
+    loopState.lastCandleTime = latestCandleTime;
+    loopState.skipLogged = false;
+  }
+
   const spread = await broker.getSpread(config.symbol);
   // --- AI mode: bypass rule engine, use neural network ---
   let decision: ReturnType<typeof calculateSignal>;
@@ -300,14 +326,16 @@ async function main(): Promise<void> {
   });
   await alerts.send(formatBotStartedAlert(config, startingBalance, mode));
 
+  const loopState: LoopState = {};
+
   try {
-    await scanOnce(broker, config, execution, dashboardState, journal, mode);
+    await scanOnce(broker, config, execution, dashboardState, journal, mode, loopState);
 
     while (config.bot.loopEnabled && !stopping) {
       await sleep(config.bot.intervalSeconds * 1000);
       if (stopping) break;
       try {
-        await scanOnce(broker, config, execution, dashboardState, journal, mode);
+        await scanOnce(broker, config, execution, dashboardState, journal, mode, loopState);
       } catch (error) {
         logger.error("Signal loop failed", { message: error instanceof Error ? error.message : String(error) });
         journal.recordBotEvent("error", { message: error instanceof Error ? error.message : String(error) });

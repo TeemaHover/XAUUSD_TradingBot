@@ -2,7 +2,8 @@
   "symbol": "GOLD",
   "bot": {
     "loopEnabled": true,
-    "intervalSeconds": 60
+    "intervalSeconds": 60,
+    "evaluateOncePerCandle": true
   },
   "broker": {
     "mode": "auto"
@@ -129,13 +130,13 @@
   "alerts": {
     "telegram": {
       "enabled": true,
-      "botToken": "8578262536:AAFQHHLPMXa9GRPbqRCRRD-RnJhGjHBpswQ",
-      "chatId": "8495635905"
+      "botToken": "",
+      "chatId": ""
     }
   },
   "dashboard": {
     "enabled": true,
-    "host": "127.0.0.1",
+    "host": "0.0.0.0",
     "port": 8787
   },
   "journal": {

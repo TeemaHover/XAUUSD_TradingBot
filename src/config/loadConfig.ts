@@ -65,8 +65,18 @@ function applyEnvOverrides(config: AppConfig): void {
   const intervalSeconds = envNumber("BOT_INTERVAL_SECONDS");
   if (intervalSeconds !== undefined) config.bot.intervalSeconds = intervalSeconds;
 
+  const oncePerCandle = envBoolean("BOT_EVALUATE_ONCE_PER_CANDLE");
+  if (oncePerCandle !== undefined) config.bot.evaluateOncePerCandle = oncePerCandle;
+
   if (process.env.BROKER_MODE !== undefined) {
     config.broker.mode = process.env.BROKER_MODE.trim() as typeof config.broker.mode;
+  }
+
+  if (process.env.DASHBOARD_HOST !== undefined) {
+    config.dashboard.host = process.env.DASHBOARD_HOST.trim();
+  }
+  if (process.env.DASHBOARD_PASSWORD !== undefined) {
+    config.dashboard.password = process.env.DASHBOARD_PASSWORD;
   }
 
   const telegramEnabled = envBoolean("TELEGRAM_ENABLED");

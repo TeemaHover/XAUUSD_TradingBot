@@ -1,4 +1,5 @@
 import http from "node:http";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { Broker } from "../broker/Broker";
@@ -10,6 +11,27 @@ export interface DashboardState {
   lastDecision?: SignalDecision;
   lastSignal?: TradeSignal;
   dailyPnl: number;
+}
+
+/**
+ * Validate an HTTP Basic Authorization header against the configured password.
+ * Any username is accepted — only the password matters. No password configured
+ * means auth is disabled (localhost use). Hash-then-compare keeps the check
+ * constant-time regardless of input length.
+ */
+export function basicAuthOk(authorizationHeader: string | undefined, password: string | undefined): boolean {
+  if (!password) return true;
+  if (!authorizationHeader?.startsWith("Basic ")) return false;
+  let supplied: string;
+  try {
+    const decoded = Buffer.from(authorizationHeader.slice(6), "base64").toString("utf8");
+    supplied = decoded.slice(decoded.indexOf(":") + 1);
+  } catch {
+    return false;
+  }
+  const a = crypto.createHash("sha256").update(supplied).digest();
+  const b = crypto.createHash("sha256").update(password).digest();
+  return crypto.timingSafeEqual(a, b);
 }
 
 type SqliteRow = Record<string, unknown>;
@@ -56,6 +78,14 @@ export class DashboardServer {
 
     this.server = http.createServer(async (req, res) => {
       try {
+        if (!basicAuthOk(req.headers.authorization, this.config.dashboard.password)) {
+          res.writeHead(401, {
+            "WWW-Authenticate": 'Basic realm="XAUUSD Bot Dashboard", charset="UTF-8"',
+            "Content-Type": "text/plain"
+          });
+          res.end("Authentication required");
+          return;
+        }
         const url = req.url ?? "/";
         if (url.startsWith("/api/state")) {
           const payload = await this.buildState();

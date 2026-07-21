@@ -135,6 +135,8 @@ export interface AppConfig {
   bot: {
     loopEnabled: boolean;
     intervalSeconds: number;
+    /** Evaluate signals only once per new entry-timeframe candle (default true). */
+    evaluateOncePerCandle?: boolean;
   };
   broker: {
     /** "auto" picks mt5 on Windows and metaapi on macOS/Linux */
@@ -236,6 +238,8 @@ export interface AppConfig {
     enabled: boolean;
     host: string;
     port: number;
+    /** Basic-auth password (set via DASHBOARD_PASSWORD in .env). Empty/unset = no auth. */
+    password?: string;
   };
   journal: {
     enabled: boolean;

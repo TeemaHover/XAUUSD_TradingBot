@@ -176,8 +176,11 @@ def handle(command: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         if rates is None or len(rates) == 0:
             # Fall back: try progressively smaller bar counts until one succeeds
             # (MT5 terminal "Max bars in chart" setting varies; default often 50000)
+            # Start at pos 1, NOT 0: pos 0 is the still-forming candle. Models and
+            # backtests only ever see closed bars, and the bot's once-per-candle
+            # gate keys off the last candle time — a partial bar would break both.
             for try_limit in [99000, 50000, 30000, 10000, limit]:
-                rates = mt5.copy_rates_from_pos(symbol, mt5_timeframe, 0, try_limit)
+                rates = mt5.copy_rates_from_pos(symbol, mt5_timeframe, 1, try_limit)
                 if rates is not None and len(rates) > 0:
                     break
 
