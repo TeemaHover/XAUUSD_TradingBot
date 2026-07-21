@@ -3,7 +3,7 @@ export type Bias = "bullish" | "bearish" | "sideways";
 export type Timeframe = "5m" | "15m" | "1h" | "4h" | "1d";
 export type SessionName = "Asian" | "London" | "NewYork" | "OffSession";
 export type MarketRegime = "trending" | "ranging" | "highVolatility" | "lowVolatility";
-export type TradingMode = "beginner" | "advanced" | "expert" | "dumb" | "ai";
+export type TradingMode = "beginner" | "advanced" | "expert" | "dumb" | "ai" | "mtf";
 export type ScoreComponent =
   | "trendAlignment"
   | "liquiditySweep"
@@ -202,8 +202,21 @@ export interface AppConfig {
     aiTrendFilter?: boolean;
     /** "fvg" = enter AI trades as limit orders on the pullback into an unfilled fair value gap; "market" = enter immediately (default) */
     aiEntryMode?: "market" | "fvg";
+    /** mtf mode: top-down multi-timeframe cascade (1D bias -> HTF zones -> 1H setup -> 5m trigger) */
+    mtfMode?: boolean;
     srProximityAtr: number;
     srZoneToleranceAtr: number;
+  };
+  /** Settings for the multi-timeframe cascade (strategy.mtfMode). */
+  mtf?: {
+    dailyEmaLength?: number;
+    zoneProximityAtr?: number;
+    stopBufferAtr?: number;
+    maxStopAtr?: number;
+    minRR?: number;
+    maxHoldBars?: number;
+    /** 5m bars to wait after a trade before the next entry (one idea = one trade) */
+    cooldownBars?: number;
   };
   regime: {
     adxLength: number;
@@ -297,6 +310,8 @@ export interface AppConfig {
       entry: number;
       trend: number;
       higherTrend: number;
+      /** daily candles fetched for the MTF cascade (default 400) */
+      daily?: number;
     };
   };
 }

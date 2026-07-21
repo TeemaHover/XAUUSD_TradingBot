@@ -18,6 +18,14 @@ export interface DashboardState {
     rules: string;
     updatedAt: number;
   };
+  forecast?: {
+    candles: Array<{ t: number; o: number; h: number; l: number; c: number }>;
+    projection: Array<{ t: number; mid: number; upper: number; lower: number }>;
+    direction: string;
+    confidence: number;
+    atr: number;
+    updatedAt: number;
+  };
 }
 
 /**
@@ -147,6 +155,7 @@ export class DashboardServer {
       lastDecision: this.state.lastDecision ?? null,
       lastSignal: this.state.lastSignal ?? null,
       regime: this.state.regime ?? null,
+      forecast: this.state.forecast ?? null,
       recentSignals: this.querySignals(120),
       recentTrades: this.queryTrades(20),
       equitySeries: this.equitySeries,
@@ -307,6 +316,14 @@ const PAGE_HTML = `<!DOCTYPE html>
       </div>
       <svg class="spark" id="spark" viewBox="0 0 300 120" preserveAspectRatio="none"></svg>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="panel-head">
+      <span class="panel-title">● 5M Chart · Model Projection</span>
+      <span class="panel-note" id="fc-note">WAITING FOR FIRST CANDLE…</span>
+    </div>
+    <svg id="fc-svg" viewBox="0 0 1140 240" preserveAspectRatio="none" style="width:100%; height:240px;"></svg>
   </div>
 
   <div class="card">
@@ -547,6 +564,50 @@ const PAGE_HTML = `<!DOCTYPE html>
     $("sig-body").innerHTML = html || '<tr><td colspan="4" style="color:#8b887c">no signals yet</td></tr>';
   }
 
+  function renderForecast(state) {
+    var svg = $("fc-svg");
+    var fc = state.forecast;
+    if (!fc || !fc.candles || fc.candles.length < 2) {
+      svg.innerHTML = '<text x="10" y="30" font-size="11" fill="#8b887c">waiting for the first evaluated candle…</text>';
+      return;
+    }
+    var W = 1140, H = 240, PAD = 8;
+    var candles = fc.candles, proj = fc.projection || [];
+    var n = candles.length, m = proj.length, slots = n + m, i;
+    var lo = Infinity, hi = -Infinity;
+    for (i = 0; i < n; i++) { if (candles[i].l < lo) lo = candles[i].l; if (candles[i].h > hi) hi = candles[i].h; }
+    for (i = 0; i < m; i++) { if (proj[i].lower < lo) lo = proj[i].lower; if (proj[i].upper > hi) hi = proj[i].upper; }
+    var span = (hi - lo) || 1;
+    function X(idx) { return PAD + (idx + 0.5) * ((W - 2 * PAD) / slots); }
+    function Y(p) { return PAD + (1 - (p - lo) / span) * (H - 2 * PAD); }
+    var w = Math.max(1.5, (W - 2 * PAD) / slots * 0.55);
+    var html = "";
+    for (i = 0; i < n; i++) {
+      var c = candles[i];
+      var col = c.c >= c.o ? "#157f3d" : "#b23b2e";
+      var x = X(i);
+      html += '<line x1="' + x + '" y1="' + Y(c.h) + '" x2="' + x + '" y2="' + Y(c.l) + '" stroke="' + col + '" stroke-width="1"/>';
+      var top = Y(Math.max(c.o, c.c)), bot = Y(Math.min(c.o, c.c));
+      html += '<rect x="' + (x - w / 2) + '" y="' + top + '" width="' + w + '" height="' + Math.max(1, bot - top) + '" fill="' + col + '"/>';
+    }
+    if (m > 0) {
+      var dcol = fc.direction === "long" ? "#157f3d" : fc.direction === "short" ? "#b23b2e" : "#8b887c";
+      var pts = "";
+      for (i = 0; i < m; i++) pts += X(n + i) + "," + Y(proj[i].upper) + " ";
+      for (i = m - 1; i >= 0; i--) pts += X(n + i) + "," + Y(proj[i].lower) + " ";
+      html += '<polygon points="' + pts + '" fill="' + dcol + '" opacity="0.10"/>';
+      var d = "M" + X(n - 1) + " " + Y(candles[n - 1].c);
+      for (i = 0; i < m; i++) d += " L" + X(n + i) + " " + Y(proj[i].mid);
+      html += '<path d="' + d + '" fill="none" stroke="' + dcol + '" stroke-width="1.6" stroke-dasharray="5 4"/>';
+      var dx = (X(n - 1) + X(n)) / 2;
+      html += '<line x1="' + dx + '" y1="0" x2="' + dx + '" y2="' + H + '" stroke="#9a9789" stroke-dasharray="3 4" stroke-width="1"/>';
+    }
+    svg.innerHTML = html;
+    $("fc-note").textContent =
+      (fc.direction === "none" ? "NO LEAN" : fc.direction.toUpperCase() + " LEAN " + fmt(fc.confidence * 100, 0) + "%") +
+      " · NEXT " + m + " BARS · CONE ±1 ATR·√t · MODEL LEAN, NOT A LITERAL PATH";
+  }
+
   function renderRef(state) {
     var r = state.backtestRef;
     if (!r) { $("ref-chips").innerHTML = '<span class="chip">backtest-baseline.json not found</span>'; return; }
@@ -583,6 +644,7 @@ const PAGE_HTML = `<!DOCTYPE html>
         chip("CLOSED TRADES", (state.history || []).length) +
         chip("UPTIME", Math.floor(state.uptimeMs / 3600000) + "h " + Math.floor((state.uptimeMs % 3600000) / 60000) + "m");
       renderSpark(state.equitySeries);
+      renderForecast(state);
       renderHisto(state);
       renderSignal(state);
       renderTables(state);

@@ -2,9 +2,11 @@ import { BacktestResult, runBacktest } from "./backtestEngine";
 import { firstPredictionIndex, loadAiPredictions, makeAiSignalProvider } from "./aiBacktest";
 import { runWalkForward } from "./walkForward";
 import { loadCandlesFromCsv } from "./csv";
+import { closedUpTo, resampleCandles, TIMEFRAME_MS } from "./resample";
 import { loadConfig } from "../config/loadConfig";
 import { logger } from "../logger/logger";
-import { AppConfig } from "../types";
+import { calculateMtfSignal, mtfSettings } from "../strategy/mtfCascade";
+import { AppConfig, Candle } from "../types";
 
 const csvPath = process.argv[2] ?? "data/xauusd.csv";
 const outputPath = process.argv[3] ?? "backtest-results.json";
@@ -142,9 +144,78 @@ function sweepConfidence(
   /* eslint-enable no-console */
 }
 
+/**
+ * MTF cascade backtest: resample the 5m series to 1h/4h/1d and evaluate the
+ * top-down cascade at every bar, feeding each layer only candles that were
+ * CLOSED at that moment (no higher-timeframe lookahead).
+ */
+function runMtf(): void {
+  const settings = mtfSettings(config);
+  const h1 = resampleCandles(candles, "1h");
+  const h4 = resampleCandles(candles, "4h");
+  const d1 = resampleCandles(candles, "1d");
+  logger.warn(`MTF backtest: ${candles.length.toLocaleString()} 5m candles -> ${h1.length} h1, ${h4.length} h4, ${d1.length} d1`);
+
+  // Warmup: the daily bias needs dailyEmaLength + swing lookback closed days
+  const neededDays = settings.dailyEmaLength + config.strategy.swingLookback * 2;
+  if (d1.length <= neededDays) {
+    logger.error(`Not enough daily candles for the cascade (${d1.length} <= ${neededDays})`);
+    process.exitCode = 1;
+    return;
+  }
+  const warmupCutoff = d1[neededDays].time + TIMEFRAME_MS["1d"];
+  let startIndex = candles.findIndex((c) => c.time + TIMEFRAME_MS["5m"] >= warmupCutoff);
+  if (startIndex < 0) startIndex = candles.length;
+  logger.warn(`MTF warmup: ${neededDays} daily candles -> starting at 5m index ${startIndex.toLocaleString()}`);
+
+  // One idea = one trade: after a signal, suppress re-entries for cooldownBars
+  // (the cascade's conditions persist for hours — without this, every 5m bar
+  // at the zone would fire another overlapping trade).
+  let lastSignalIndex = -Infinity;
+  const provider = (
+    entryWindow: Candle[],
+    _trend: Candle[],
+    _higher: Candle[],
+    spread: number,
+    cfg: AppConfig,
+    index: number
+  ) => {
+    if (index - lastSignalIndex < settings.cooldownBars) {
+      return calculateMtfSignal([], [], [], [], spread, cfg); // cheap "not enough candles" reject
+    }
+    const cutoff = entryWindow.at(-1)!.time + TIMEFRAME_MS["5m"];
+    const decision = calculateMtfSignal(
+      entryWindow.slice(-400),
+      closedUpTo(h1, "1h", cutoff, 400),
+      closedUpTo(h4, "4h", cutoff, 400),
+      closedUpTo(d1, "1d", cutoff, 400),
+      spread,
+      cfg
+    );
+    if (decision.signal) lastSignalIndex = index;
+    return decision;
+  };
+
+  const result = runBacktest(candles, config, outputPath, {
+    startIndex,
+    maxHoldBars: settings.maxHoldBars,
+    signalProvider: provider
+  });
+
+  /* eslint-disable no-console */
+  console.log("\n=== MTF CASCADE BACKTEST ===");
+  console.log(tableHeader);
+  console.log(row("MTF cascade", result));
+  console.log(`\nSettings: minRR=${settings.minRR}, dailyEMA=${settings.dailyEmaLength}, maxHold=${settings.maxHoldBars} bars`);
+  console.log(`Details: ${outputPath}`);
+  /* eslint-enable no-console */
+}
+
 if (candles.length === 0) {
   logger.error("No candles loaded", { csvPath });
   process.exitCode = 1;
+} else if (process.argv.includes("--mtf")) {
+  runMtf();
 } else if (process.argv.includes("--ai")) {
   compareAi();
 } else if (process.argv.includes("--walk-forward")) {

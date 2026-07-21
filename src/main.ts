@@ -18,18 +18,24 @@ import { applyTradingMode, TRADING_MODES } from "./modes/tradingModes";
 import { aiPredict, buildAiSignal } from "./strategy/aiSignalEngine";
 import { detectMarketRegime } from "./strategy/marketRegimeDetector";
 import { hmmPredict } from "./strategy/hmmRegime";
+import { calculateMtfSignal } from "./strategy/mtfCascade";
+import { atr } from "./indicators/atr";
 
 interface MarketSnapshot {
   entryCandles: Candle[];
   trendCandles: Candle[];
   higherTrendCandles: Candle[];
+  dailyCandles?: Candle[];
 }
 
 async function fetchMarketSnapshot(broker: Broker, config: AppConfig): Promise<MarketSnapshot> {
   const entryCandles = await broker.getCandles(config.symbol, config.timeframes.entry, config.mt5.bars.entry);
   const trendCandles = await broker.getCandles(config.symbol, config.timeframes.trend, config.mt5.bars.trend);
   const higherTrendCandles = await broker.getCandles(config.symbol, config.timeframes.higherTrend, config.mt5.bars.higherTrend);
-  return { entryCandles, trendCandles, higherTrendCandles };
+  const dailyCandles = config.strategy.mtfMode
+    ? await broker.getCandles(config.symbol, "1d", config.mt5.bars.daily ?? 400)
+    : undefined;
+  return { entryCandles, trendCandles, higherTrendCandles, dailyCandles };
 }
 
 async function createBroker(config: AppConfig): Promise<Broker> {
@@ -106,7 +112,7 @@ function parseModeArg(): TradingMode | undefined {
   const idx = process.argv.indexOf("--mode");
   if (idx === -1) return undefined;
   const val = process.argv[idx + 1];
-  const valid: TradingMode[] = ["beginner", "advanced", "expert", "dumb", "ai"];
+  const valid: TradingMode[] = ["beginner", "advanced", "expert", "dumb", "ai", "mtf"];
   if (valid.includes(val as TradingMode)) return val as TradingMode;
   logger.warn("Unknown --mode value, ignoring", { val, valid });
   return undefined;
@@ -171,7 +177,7 @@ async function scanOnce(
   mode: TradingMode,
   loopState: LoopState
 ): Promise<void> {
-  const { entryCandles, trendCandles, higherTrendCandles } = await fetchMarketSnapshot(broker, config);
+  const { entryCandles, trendCandles, higherTrendCandles, dailyCandles } = await fetchMarketSnapshot(broker, config);
 
   // One decision per entry candle: with a short poll interval the same candle
   // would otherwise be evaluated many times, firing duplicate market orders
@@ -208,9 +214,18 @@ async function scanOnce(
   };
 
   const spread = await broker.getSpread(config.symbol);
-  // --- AI mode: bypass rule engine, use neural network ---
+  // --- MTF mode: top-down cascade (1D -> 4H zones -> 1H setup -> 5m trigger) ---
   let decision: ReturnType<typeof calculateSignal>;
-  if (config.strategy.aiMode) {
+  if (config.strategy.mtfMode) {
+    decision = calculateMtfSignal(
+      entryCandles,
+      trendCandles,
+      higherTrendCandles,
+      dailyCandles ?? [],
+      spread,
+      config
+    );
+  } else if (config.strategy.aiMode) {
     const prediction = await aiPredict(
       {
         [config.timeframes.entry]: entryCandles,
@@ -254,6 +269,39 @@ async function scanOnce(
   dashboardState.lastDecision = decision;
   journal.recordSignal(decision);
 
+  // Projection for the dashboard chart. Drift follows the model's directional
+  // lean (confidence-scaled), the cone is ±1 ATR·√t — a picture of "where the
+  // model leans within normal volatility", NOT a literal price-path forecast.
+  const atrSeries = atr(entryCandles, config.strategy.atrLength ?? 14);
+  const lastAtr = atrSeries.at(-1) ?? 0;
+  const lastEntry = entryCandles.at(-1);
+  if (lastEntry && lastAtr > 0) {
+    const dir = decision.finalDecision.direction;
+    const sign = dir === "long" ? 1 : dir === "short" ? -1 : 0;
+    const conf = Math.max(0, Math.min(1, decision.score / 100));
+    const prevEntry = entryCandles.at(-2);
+    const tfMs = prevEntry ? lastEntry.time - prevEntry.time : 300000;
+    const projection = [];
+    for (let k = 1; k <= 24; k++) {
+      const drift = sign * conf * lastAtr * 0.5 * Math.sqrt(k);
+      const cone = lastAtr * Math.sqrt(k);
+      projection.push({
+        t: lastEntry.time + k * tfMs,
+        mid: lastEntry.close + drift,
+        upper: lastEntry.close + drift + cone,
+        lower: lastEntry.close + drift - cone
+      });
+    }
+    dashboardState.forecast = {
+      candles: entryCandles.slice(-60).map((c) => ({ t: c.time, o: c.open, h: c.high, l: c.low, c: c.close })),
+      projection,
+      direction: dir,
+      confidence: conf,
+      atr: lastAtr,
+      updatedAt: Date.now()
+    };
+  }
+
   const recentHigh = Math.max(...entryCandles.slice(-20).map((c) => c.high));
   const recentLow  = Math.min(...entryCandles.slice(-20).map((c) => c.low));
   const currentPrice = entryCandles.at(-1)?.close ?? 0;
@@ -286,6 +334,16 @@ async function scanOnce(
 
   if (decision.signal) {
     dashboardState.lastSignal = decision.signal;
+    // MTF cascade trades one idea at a time: the same setup persists for many
+    // candles, so a new entry while a position is open would just pyramid the
+    // same trade. Other modes keep their existing behavior.
+    if (config.strategy.mtfMode) {
+      const openPositions = await broker.getOpenPositions().catch(() => []);
+      if (openPositions.some((p) => p.symbol === config.symbol)) {
+        logger.info("MTF: position already open — skipping duplicate entry for the same idea");
+        return;
+      }
+    }
     await execution.execute(decision.signal);
   }
 }

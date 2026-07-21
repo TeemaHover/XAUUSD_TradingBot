@@ -186,6 +186,17 @@ export function applyNextOpenFill(signal: TradeSignal, nextCandle: Candle, confi
     : nextCandle.open - config.mockBroker.spread / 2 - config.mockBroker.slippage;
   const risk = Math.abs(entry - signal.stopLoss);
   if (risk < config.risk.minStopDistance) return undefined;
+  // A gap between signal and fill can invert the trade geometry: fill beyond
+  // the stop (instant fake-"breakeven" exit) or beyond a price-mode target
+  // (instant fake win). A real broker would reject these stops — skip them.
+  const stopInverted = signal.direction === "long" ? entry <= signal.stopLoss : entry >= signal.stopLoss;
+  if (stopInverted) return undefined;
+  if (signal.tpMode === "price") {
+    const tpInverted = signal.takeProfits.some((tp) => (
+      signal.direction === "long" ? tp <= entry : tp >= entry
+    ));
+    if (tpInverted) return undefined;
+  }
 
   // Price-level TPs (range boundaries, structure targets) stay put when the
   // fill price shifts; R-multiple TPs are recomputed from the actual fill.

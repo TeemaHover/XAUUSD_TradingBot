@@ -21,6 +21,8 @@ import { formatOpenPositionAlert } from "../src/execution/executionEngine";
 import { formatBotStartedAlert, formatBotStoppedAlert } from "../src/main";
 import { SqliteJournal } from "../src/journal/sqliteJournal";
 import { basicAuthOk } from "../src/dashboard/dashboardServer";
+import { resampleCandles, closedUpTo } from "../src/backtest/resample";
+import { activeZoneAt, calculateMtfSignal, nearestTargetBeyond } from "../src/strategy/mtfCascade";
 
 function testEma(): void {
   const values = ema([1, 2, 3, 4], 3);
@@ -168,6 +170,68 @@ function testBotLifecycleAlertMessages(): void {
   assert.match(stopped, /Symbol: GOLD/);
   assert.match(stopped, brokerLine);
   assert.match(stopped, /Stopped at:/);
+}
+
+function testResample(): void {
+  // 12 five-minute candles = exactly one 1h bucket
+  const start = 1_700_000_000_000 - (1_700_000_000_000 % 3_600_000);
+  const fives: Candle[] = Array.from({ length: 12 }, (_, i) => ({
+    time: start + i * 300_000,
+    open: 100 + i,
+    high: 110 + i,
+    low: 90 - i,
+    close: 101 + i,
+    volume: 2
+  }));
+  const hourly = resampleCandles(fives, "1h");
+  assert.equal(hourly.length, 1);
+  assert.equal(hourly[0].open, 100);        // first bar's open
+  assert.equal(hourly[0].close, 101 + 11);  // last bar's close
+  assert.equal(hourly[0].high, 110 + 11);   // max high
+  assert.equal(hourly[0].low, 90 - 11);     // min low
+  assert.equal(hourly[0].volume, 24);       // summed
+
+  // closedUpTo: bucket only appears once fully closed (no lookahead)
+  const mid = closedUpTo(hourly, "1h", start + 1_800_000, 10);
+  assert.equal(mid.length, 0);
+  const done = closedUpTo(hourly, "1h", start + 3_600_000, 10);
+  assert.equal(done.length, 1);
+}
+
+function testMtfHelpers(): void {
+  const zones = [
+    { low: 90, high: 92, strength: 50 },
+    { low: 110, high: 112, strength: 75 },
+    { low: 120, high: 122, strength: 100 }
+  ];
+  // Long target = nearest zone ABOVE entry, priced at its near edge
+  const upTarget = nearestTargetBeyond(zones, "long", 100);
+  assert.equal(upTarget?.price, 110);
+  // Short target = nearest zone BELOW entry
+  const downTarget = nearestTargetBeyond(zones, "short", 100);
+  assert.equal(downTarget?.price, 92);
+  // Beyond all zones -> no target
+  assert.equal(nearestTargetBeyond(zones, "long", 130), undefined);
+
+  // activeZoneAt picks the strongest touching zone
+  const both = [
+    { low: 99, high: 101, strength: 25 },
+    { low: 98, high: 100.5, strength: 100 }
+  ];
+  assert.equal(activeZoneAt(100, both, 1)?.strength, 100);
+  assert.equal(activeZoneAt(200, both, 1), undefined);
+}
+
+function testMtfCascadeRejectsGracefully(): void {
+  const config = loadConfig();
+  // No candles at all -> "not enough candles" rejection, never a throw
+  const empty = calculateMtfSignal([], [], [], [], 0.25, config);
+  assert.equal(empty.status, "rejected");
+  // Sample candles but no daily series -> rejected before any trade logic
+  const candles = sampleCandles(300);
+  const noDaily = calculateMtfSignal(candles, candles, candles, [], 0.25, config);
+  assert.equal(noDaily.status, "rejected");
+  assert.ok(noDaily.reasons.some((r) => r.includes("bias") || r.includes("daily")));
 }
 
 function testDashboardBasicAuth(): void {
@@ -558,6 +622,9 @@ testTelegramEnvOverrides();
 testOpenPositionAlertMessage();
 testSqliteJournalWrites();
 testBotLifecycleAlertMessages();
+testResample();
+testMtfHelpers();
+testMtfCascadeRejectsGracefully();
 testDashboardBasicAuth();
 testRiskGuard();
 testRiskGuardHydratesFromHistory();

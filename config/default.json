@@ -52,6 +52,15 @@
     "entryMode": "market",
     "zoneTouchToleranceAtr": 0.15
   },
+  "mtf": {
+    "dailyEmaLength": 50,
+    "zoneProximityAtr": 1.0,
+    "stopBufferAtr": 0.5,
+    "maxStopAtr": 3.0,
+    "minRR": 3,
+    "maxHoldBars": 2016,
+    "cooldownBars": 288
+  },
   "regime": {
     "adxLength": 14,
     "trendAdxThreshold": 22,
@@ -198,7 +207,8 @@
     "bars": {
       "entry": 500,
       "trend": 500,
-      "higherTrend": 500
+      "higherTrend": 500,
+      "daily": 400
     }
   }
 }

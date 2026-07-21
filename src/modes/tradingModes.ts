@@ -86,6 +86,29 @@ export const TRADING_MODES: Record<TradingMode, ModeOverride> = {
     }
   },
   /**
+   * MTF: top-down multi-timeframe cascade.
+   * 1D bias -> price at a 1D/4H S/R zone -> 1H rejection -> 5m trigger.
+   * SL behind 5m structure, TP at the next opposing HTF zone, and trades
+   * with less than mtf.minRR reward:risk are skipped entirely.
+   */
+  mtf: {
+    description: "Top-down cascade — 1D bias, HTF zones, 1H setup, 5m trigger. Big targets only.",
+    strategy: {
+      mtfMode: true,
+      aiMode: false,
+      dumbMode: false,
+      minScore: 1,
+      watchlistScore: 1,
+      allowCounterTrendTrades: false,
+      counterTrendMinScore: 99,
+      requireConfirmationCandle: false,
+      rangeLongThreshold: 15,
+      rangeShortThreshold: 85,
+      rangeMinAlternations: 2,
+    }
+  },
+
+  /**
    * AI: neural network predictions replace the rule-based scoring engine.
    * Requires a trained model at models/ai_model.npz.
    * Train with: python scripts/ai_collect.py && python scripts/ai_train.py data/gold_5m.csv
