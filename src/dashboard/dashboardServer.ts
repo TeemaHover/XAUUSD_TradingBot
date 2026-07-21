@@ -145,6 +145,7 @@ export class DashboardServer {
       symbol: this.config.symbol,
       brokerMode: this.config.broker.mode,
       aiMode: this.config.strategy.aiMode ?? false,
+      mtfMode: this.config.strategy.mtfMode ?? false,
       aiThreshold: this.config.strategy.aiConfidenceThreshold ?? null,
       aiModelPath: this.config.strategy.aiModelPath ?? null,
       riskPerTrade: this.config.risk.riskPerTrade,
@@ -623,9 +624,10 @@ const PAGE_HTML = `<!DOCTYPE html>
   function refresh() {
     fetch("/api/state").then(function (r) { return r.json(); }).then(function (state) {
       if (state.aiThreshold) THRESHOLD = state.aiThreshold;
-      $("hdr-sub").textContent = "AUTONOMOUS · " + (state.aiMode ? "AI MODE" : "RULES MODE") +
+      var modeName = state.mtfMode ? "MTF" : state.aiMode ? "AI" : "RULES";
+      $("hdr-sub").textContent = "AUTONOMOUS · " + modeName + " MODE" +
         " · LIVE ON " + (state.brokerMode || "?").toUpperCase() + " · RISK " + fmt(state.riskPerTrade * 100, 1) + "%";
-      $("pill-mode").textContent = "MODE · " + (state.aiMode ? "AI" : "RULES");
+      $("pill-mode").textContent = "MODE · " + modeName;
       var rg = state.regime;
       if (rg && rg.hmmLabel && rg.hmmLabel !== "unknown") {
         $("pill-regime").textContent = "REGIME · HMM " + rg.hmmLabel.toUpperCase() + " " +
