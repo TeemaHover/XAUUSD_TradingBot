@@ -47,7 +47,7 @@
     "dumbMode": false,
     "aiMode": true,
     "aiConfidenceThreshold": 0.35,
-    "aiModelPath": "models/ai_model.npz",
+    "aiModelPath": "models/m_tl_improved.npz",
     "entryMode": "market",
     "zoneTouchToleranceAtr": 0.15
   },

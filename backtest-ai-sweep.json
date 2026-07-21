@@ -1,18 +1,36 @@
 {
-  "totalTrades": 0,
+  "totalTrades": 1,
   "winRate": 0,
   "profitFactor": 0,
-  "maxDrawdown": 0,
-  "expectancy": 0,
-  "totalReturn": 0,
-  "averageR": 0,
-  "endingBalance": 10000,
+  "maxDrawdown": 0.10538391265253703,
+  "expectancy": -1.053839126525371,
+  "totalReturn": -0.10538391265253703,
+  "averageR": -1.053839126525371,
+  "endingBalance": 8946.16087347463,
   "performanceSummary": {
     "grossWinR": 0,
-    "grossLossR": 0,
+    "grossLossR": 1.053839126525371,
     "rejectedByRisk": 0,
     "rejectedByTradeGuard": 0,
     "canceledLimitOrders": 0
   },
-  "trades": []
+  "trades": [
+    {
+      "entryTime": 1778512800000,
+      "exitTime": 1778512800000,
+      "direction": "short",
+      "entry": 4672.455,
+      "stopLoss": 4676.903571428571,
+      "takeProfits": [
+        4668.006428571429,
+        4663.557857142858,
+        4659.109285714287
+      ],
+      "resultR": -1.053839126525371,
+      "score": 70,
+      "exitReason": "stop_loss",
+      "commissionR": 0.031360000000000006,
+      "slippageR": 0.022479126525371033
+    }
+  ]
 }
