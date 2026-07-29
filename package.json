@@ -9,7 +9,10 @@
     "start": "node dist/src/main.js",
     "dev": "ts-node src/main.ts",
     "backtest": "node dist/src/backtest/runBacktest.js",
-    "test": "node dist/tests/runTests.js"
+    "test": "node dist/tests/runTests.js",
+    "release": "npm version patch",
+    "preversion": "npm run build && npm test",
+    "postversion": "git push && git push --tags"
   },
   "dependencies": {
     "metaapi.cloud-sdk": "^29.3.3"
