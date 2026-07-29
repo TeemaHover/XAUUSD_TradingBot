@@ -1,6 +1,6 @@
 {
   "name": "xauusd-typescript-trading-bot",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Modular TypeScript trading bot for XAUUSD with mock broker and backtesting.",
   "main": "dist/src/main.js",
   "type": "commonjs",
